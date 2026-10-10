@@ -1,0 +1,7 @@
+[submodule "vendor/easytier-src"]
+	path = vendor/easytier-src
+	url = https://github.com/EasyTier/EasyTier.git
+[submodule "vendor/mihomo-src"]
+	path = vendor/mihomo-src
+	url = https://github.com/MetaCubeX/mihomo.git
+	ignore = dirty

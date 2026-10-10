@@ -1,0 +1,15 @@
+[package]
+name = "easytier"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "easytier"
+crate-type = ["cdylib"]
+
+[dependencies]
+jni = "0.21.1"
+easytier-core = { path = "../../../../vendor/easytier-src/easytier-core", default-features = false }
+tokio = { version = "1.37.0", features = ["rt-multi-thread", "macros"] }
+serde_json = "1.0"
+lazy_static = "1.4.0"

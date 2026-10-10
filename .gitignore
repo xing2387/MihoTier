@@ -1,0 +1,28 @@
+# Gradle & Android build outputs
+*.iml
+.gradle/
+/build/
+/app/build/
+/core/build/
+/easytier/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+local.properties
+
+# Android Studio / IntelliJ IDEA
+.idea/
+
+# macOS / Linux OS files
+.DS_Store
+*~
+
+# Rust build artifacts
+/easytier/src/main/rust/target/
+
+# Compiled Go-Mobile AAR binaries (generated via scripts/mihomo/build.sh)
+/mihomo-mobile/*.aar
+/mihomo-mobile/*-sources.jar
+/core/libs/*.aar
+/core/libs/*-sources.jar
