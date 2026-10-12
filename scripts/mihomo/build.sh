@@ -49,7 +49,7 @@ go mod tidy
 
 # Build the AAR using gomobile
 echo "Running gomobile bind..."
-gomobile bind -v -target=android/arm64 -androidapi 21 -tags with_gvisor -ldflags="-s -w" -o mihomo.aar .
+gomobile bind -v -trimpath -target=android/arm64 -androidapi 21 -tags with_gvisor -ldflags="-s -w" -o mihomo.aar .
 
 echo "Compilation successful. Copying output to dependencies..."
 mkdir -p "$PROJECT_ROOT/core/libs"

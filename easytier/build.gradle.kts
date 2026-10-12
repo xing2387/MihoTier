@@ -66,6 +66,12 @@ val cargoBuild = tasks.register<Exec>("cargoBuild") {
         "-o", outDir.absolutePath,
         "build", "--release"
     )
+
+    doLast {
+        outDir.walkTopDown()
+            .filter { it.isFile && it.extension == "so" && it.name != "libeasytier.so" }
+            .forEach { it.delete() }
+    }
 }
 
 // Ensure the cargo build task runs before JNI libs are packaged

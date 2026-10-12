@@ -35,6 +35,16 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            excludes += listOf(
+                "**/libeasytier_core.so",
+                "**/libtun_easytier*.so",
+                "**/libboringtun_easytier*.so"
+            )
+        }
+    }
 }
 
 dependencies {
