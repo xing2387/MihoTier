@@ -23,7 +23,9 @@ import top.xing2387.mihotier.ui.screens.AppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashAppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashMainScreen
 import top.xing2387.mihotier.ui.screens.ClashLogsScreen
+import top.xing2387.mihotier.ui.screens.ClashMetaFeaturesScreen
 import top.xing2387.mihotier.ui.screens.ClashNetworkSettingsScreen
+import top.xing2387.mihotier.ui.screens.ClashOverrideSettingsScreen
 import top.xing2387.mihotier.ui.screens.ClashProfileDetailScreen
 import top.xing2387.mihotier.ui.screens.ClashProfilesScreen
 import top.xing2387.mihotier.ui.screens.ClashProxyScreen
@@ -108,9 +110,19 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = "app_selection") {
                     composable("app_selection") {
+                        val isRunning by isVpnRunning.collectAsState()
+                        val stats by trafficStats.collectAsState()
+
                         AppSelectionScreen(
+                            isRunning = isRunning,
+                            trafficStats = stats,
+                            onToggleVpn = { toggleVpn() },
                             onNavigateToClash = { navController.navigate("clash") },
-                            onNavigateToEasyTier = { /* TODO: Navigate to EasyTier */ }
+                            onNavigateToEasyTier = { /* TODO: Navigate to EasyTier */ },
+                            onNavigateToProxy = { navController.navigate("clash_proxy") },
+                            onNavigateToProfiles = { navController.navigate("clash_profiles") },
+                            onNavigateToOverride = { navController.navigate("clash_settings_override") },
+                            onNavigateToSettings = { navController.navigate("clash_settings") }
                         )
                     }
                     composable("clash") {
@@ -163,7 +175,25 @@ class MainActivity : ComponentActivity() {
                     composable("clash_settings") {
                         ClashSettingsScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onNavigateToNetwork = { navController.navigate("clash_settings_network") }
+                            onNavigateToNetwork = { navController.navigate("clash_settings_network") },
+                            onNavigateToOverride = { navController.navigate("clash_settings_override") },
+                            onNavigateToMetaFeatures = { navController.navigate("clash_settings_meta") }
+                        )
+                    }
+                    composable("clash_settings_override") {
+                        val isRunning by isVpnRunning.collectAsState()
+                        ClashOverrideSettingsScreen(
+                            isRunning = isRunning,
+                            onRestartVpn = { vpnService?.restartVpn() },
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                    composable("clash_settings_meta") {
+                        val isRunning by isVpnRunning.collectAsState()
+                        ClashMetaFeaturesScreen(
+                            isRunning = isRunning,
+                            onRestartVpn = { vpnService?.restartVpn() },
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
                     composable("clash_settings_network") {

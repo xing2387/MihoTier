@@ -36,7 +36,9 @@ import top.xing2387.mihotier.core.config.AppSettingsRepository
 @Composable
 fun ClashSettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToNetwork: () -> Unit
+    onNavigateToNetwork: () -> Unit,
+    onNavigateToOverride: () -> Unit = {},
+    onNavigateToMetaFeatures: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var showSpeedNotification by remember {
@@ -136,9 +138,7 @@ fun ClashSettingsScreen(
                         iconTint = Color(0xFF9A3412),
                         title = "覆写设置 (Override)",
                         subtitle = "自定义规则、hosts 与 DNS 覆写配置",
-                        onClick = {
-                            Toast.makeText(context, "覆写设置暂未开放", Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = onNavigateToOverride
                     )
 
                     HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
@@ -150,9 +150,7 @@ fun ClashSettingsScreen(
                         iconTint = Color(0xFF9D174D),
                         title = "Meta 特性 (Meta Features)",
                         subtitle = "内核高级功能、进程过滤及实验特性",
-                        onClick = {
-                            Toast.makeText(context, "Meta 特性暂未开放", Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = onNavigateToMetaFeatures
                     )
                 }
             }
