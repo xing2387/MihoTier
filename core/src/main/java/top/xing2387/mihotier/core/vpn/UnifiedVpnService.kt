@@ -35,6 +35,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import top.xing2387.mihotier.core.R
 import top.xing2387.mihotier.core.config.AppSettingsRepository
 import top.xing2387.mihotier.core.config.BandwidthFormatter
 import top.xing2387.mihotier.core.config.ConfigManager
@@ -559,10 +560,8 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             )
         } else null
 
-        val iconRes = applicationInfo.icon.takeIf { it != 0 } ?: android.R.drawable.stat_sys_download
-
         return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(iconRes)
+            .setSmallIcon(R.drawable.ic_stat_mihotier)
             .setContentTitle(titleText)
             .setContentText(contentText)
             .setOngoing(true)
