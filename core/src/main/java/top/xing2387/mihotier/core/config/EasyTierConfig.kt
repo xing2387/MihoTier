@@ -39,17 +39,17 @@ data class EasyTierNetworkProfile(
     val instanceName: String = "easytier",
     val hostname: String = "",
     val dhcp: Boolean = true,
-    val virtualIpv4: String = "10.144.144.1",
+    val virtualIpv4: String = "",
     val networkLength: Int = 24,
     val networkName: String = "easytier",
     val networkSecret: String = "",
     val networkingMethod: NetworkingMethod = NetworkingMethod.PUBLIC_SERVER,
     val publicServerUrl: String = "tcp://public.easytier.top:11010",
-    val peerUrls: List<String> = listOf("tcp://public.easytier.top:11010"),
+    val peerUrls: List<String> = emptyList(),
     val listenerUrls: List<String> = listOf(
-        "tcp://0.0.0.0:11010",
-        "udp://0.0.0.0:11010",
-        "wg://0.0.0.0:11011"
+        "tcp://0.0.0.0:0",
+        "udp://0.0.0.0:0",
+        "wg://0.0.0.0:0"
     ),
     val proxyCidrs: List<String> = emptyList(),
     val socks5Enabled: Boolean = true,
@@ -236,6 +236,19 @@ object EasyTierRepository {
     private const val KEY_SELECTED_ID = "selected_profile_id"
     private const val KEY_LAST_ALLOCATED_IPV4 = "last_allocated_ipv4"
     private const val KEY_LAST_PROXY_CIDRS = "last_proxy_cidrs"
+    private const val KEY_MIGRATED_EPHEMERAL_LISTENERS = "migrated_ephemeral_listeners_v1"
+    private const val KEY_MIGRATED_DEFAULTS_V2 = "migrated_defaults_v2"
+
+    private val LEGACY_DEFAULT_LISTENERS = setOf(
+        "tcp://0.0.0.0:11010",
+        "udp://0.0.0.0:11010",
+        "wg://0.0.0.0:11011"
+    )
+    private val DEFAULT_EPHEMERAL_LISTENERS = listOf(
+        "tcp://0.0.0.0:0",
+        "udp://0.0.0.0:0",
+        "wg://0.0.0.0:0"
+    )
 
     private val _profiles = MutableStateFlow<List<EasyTierNetworkProfile>>(emptyList())
     val profiles: StateFlow<List<EasyTierNetworkProfile>> = _profiles.asStateFlow()
@@ -262,24 +275,43 @@ object EasyTierRepository {
             emptyList()
         }
 
+        val migratedListenersFlag = prefs.getBoolean(KEY_MIGRATED_EPHEMERAL_LISTENERS, false)
+        val migratedDefaultsV2Flag = prefs.getBoolean(KEY_MIGRATED_DEFAULTS_V2, false)
+        var migratedAny = false
         val finalProfiles = loaded.ifEmpty {
             listOf(
                 EasyTierNetworkProfile(
                     id = UUID.randomUUID().toString(),
                     instanceName = "easytier",
                     hostname = "MihoTier-Node",
-                    dhcp = false,
-                    virtualIpv4 = "10.144.144.1",
+                    dhcp = true,
+                    virtualIpv4 = "",
                     networkLength = 24,
                     networkName = "easytier",
                     networkSecret = "",
                     networkingMethod = NetworkingMethod.MANUAL,
                     publicServerUrl = "tcp://public.easytier.top:11010",
-                    peerUrls = listOf(
-                        "tcp://public.easytier.top:11010"
-                    )
+                    peerUrls = emptyList()
                 )
             )
+        }.map { profile ->
+            var updated = profile
+            if (!migratedListenersFlag && updated.listenerUrls.isNotEmpty() && updated.listenerUrls.all { it in LEGACY_DEFAULT_LISTENERS }) {
+                migratedAny = true
+                updated = updated.copy(listenerUrls = DEFAULT_EPHEMERAL_LISTENERS)
+            }
+            if (!migratedDefaultsV2Flag) {
+                val cleanedIpv4 = if (updated.virtualIpv4 == "10.144.144.1") "" else updated.virtualIpv4
+                val cleanedPeers = updated.peerUrls.filterNot { it == "tcp://public.easytier.top:11010" }
+                if (cleanedIpv4 != updated.virtualIpv4 || cleanedPeers != updated.peerUrls) {
+                    migratedAny = true
+                    updated = updated.copy(
+                        virtualIpv4 = cleanedIpv4,
+                        peerUrls = cleanedPeers
+                    )
+                }
+            }
+            updated
         }
 
         _profiles.value = finalProfiles
@@ -290,8 +322,14 @@ object EasyTierRepository {
             finalProfiles.first().id
         }
 
-        if (loaded.isEmpty()) {
+        if (loaded.isEmpty() || migratedAny) {
             saveToPrefs(context)
+        }
+        if (!migratedListenersFlag || !migratedDefaultsV2Flag) {
+            prefs.edit()
+                .putBoolean(KEY_MIGRATED_EPHEMERAL_LISTENERS, true)
+                .putBoolean(KEY_MIGRATED_DEFAULTS_V2, true)
+                .apply()
         }
         initialized = true
         refreshRuntimeStatus()
@@ -329,11 +367,12 @@ object EasyTierRepository {
             instanceName = cleanName,
             hostname = "MihoTier-Android",
             dhcp = true,
-            virtualIpv4 = "10.144.144.1",
+            virtualIpv4 = "",
             networkLength = 24,
             networkName = cleanName,
             networkSecret = "",
-            networkingMethod = NetworkingMethod.PUBLIC_SERVER
+            networkingMethod = NetworkingMethod.PUBLIC_SERVER,
+            peerUrls = emptyList()
         )
         _profiles.value = _profiles.value + newProfile
         _selectedProfileId.value = newProfile.id
@@ -447,9 +486,11 @@ object EasyTierRepository {
             val json = JSONObject(statusJsonStr)
             val running = json.optBoolean("running", false)
             if (!running) {
+                val err = json.optString("error_msg", "")
                 _runtimeState.value = _runtimeState.value.copy(
                     isRunning = false,
-                    runningProfileId = null
+                    runningProfileId = null,
+                    lastError = err.ifBlank { _runtimeState.value.lastError }
                 )
                 return
             }
@@ -464,8 +505,10 @@ object EasyTierRepository {
                 rawIpv4
             } else if (isDhcp) {
                 "DHCP 协商中..."
+            } else if (!profile?.virtualIpv4.isNullOrBlank()) {
+                "${profile?.virtualIpv4}/${profile?.networkLength ?: 24}"
             } else {
-                "${profile?.virtualIpv4 ?: "0.0.0.0"}/${profile?.networkLength ?: 24}"
+                "未配置静态 IP"
             }
 
             val networkName = json.optString("network_name", profile?.networkName ?: "easytier")
@@ -888,16 +931,16 @@ object EasyTierRepository {
                         id = obj.optString("id", UUID.randomUUID().toString()),
                         instanceName = obj.optString("instanceName", "easytier"),
                         hostname = obj.optString("hostname", ""),
-                        dhcp = obj.optBoolean("dhcp", false),
-                        virtualIpv4 = obj.optString("virtualIpv4", "10.144.144.1"),
+                        dhcp = obj.optBoolean("dhcp", true),
+                        virtualIpv4 = obj.optString("virtualIpv4", ""),
                         networkLength = obj.optInt("networkLength", 24),
                         networkName = obj.optString("networkName", "easytier"),
                         networkSecret = obj.optString("networkSecret", ""),
                         networkingMethod = method,
                         publicServerUrl = obj.optString("publicServerUrl", "tcp://public.easytier.top:11010"),
-                        peerUrls = peerUrls.ifEmpty { listOf("tcp://public.easytier.top:11010") },
+                        peerUrls = peerUrls,
                         listenerUrls = listenerUrls.ifEmpty {
-                            listOf("tcp://0.0.0.0:11010", "udp://0.0.0.0:11010", "wg://0.0.0.0:11011")
+                            DEFAULT_EPHEMERAL_LISTENERS
                         },
                         proxyCidrs = proxyCidrs,
                         socks5Enabled = obj.optBoolean("socks5Enabled", true),

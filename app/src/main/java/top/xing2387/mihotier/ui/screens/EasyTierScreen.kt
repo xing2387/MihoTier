@@ -597,6 +597,7 @@ fun EasyTierScreen(
                                 },
                                 enabled = !currentProfile.dhcp,
                                 label = { Text("虚拟 IPv4 地址 (Virtual IPv4)") },
+                                placeholder = { Text("例如: 10.144.144.1") },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -1197,7 +1198,7 @@ fun EasyTierScreen(
                                             value = newListenerUrlInput,
                                             onValueChange = { newListenerUrlInput = it },
                                             label = { Text("添加本地监听地址") },
-                                            placeholder = { Text("例如: tcp://0.0.0.0:11010") },
+                                            placeholder = { Text("例如: tcp://0.0.0.0:0") },
                                             singleLine = true,
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp)
