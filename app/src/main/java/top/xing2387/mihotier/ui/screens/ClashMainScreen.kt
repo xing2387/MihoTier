@@ -5,16 +5,54 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,8 +89,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import top.xing2387.mihotier.R
 import top.xing2387.mihotier.core.config.ConfigManager
+import top.xing2387.mihotier.core.config.EasyTierRepository
+import top.xing2387.mihotier.core.config.OverrideSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
+import java.net.URLEncoder
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -122,7 +164,7 @@ fun ClashMainScreen(
         isTestingLatency = true
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val encodedName = java.net.URLEncoder.encode(nodeName, "UTF-8")
+                val encodedName = URLEncoder.encode(nodeName, "UTF-8")
                 val url = "http://127.0.0.1:9090/proxies/$encodedName/delay?timeout=4000&url=http://www.gstatic.com/generate_204"
                 val req = Request.Builder().url(url).get().build()
                 val client = OkHttpClient.Builder().connectTimeout(4, TimeUnit.SECONDS).readTimeout(4, TimeUnit.SECONDS).build()
@@ -172,10 +214,10 @@ fun ClashMainScreen(
         if (bytesPerSec <= 0) return "0.0 KB/s"
         val kb = bytesPerSec / 1024.0
         if (kb < 1000) {
-            return String.format(java.util.Locale.US, "%.1f KB/s", kb)
+            return String.format(Locale.US, "%.1f KB/s", kb)
         }
         val mb = kb / 1024.0
-        return String.format(java.util.Locale.US, "%.1f MB/s", mb)
+        return String.format(Locale.US, "%.1f MB/s", mb)
     }
 
     // Wave Chart Points:
@@ -231,7 +273,7 @@ fun ClashMainScreen(
                             if (res.isSuccessful) {
                                 val json = JSONObject(res.body?.string() ?: "")
                                 val rawM = json.optString("mode", "rule")
-                                val m = if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(context).enabled &&
+                                val m = if (EasyTierRepository.getBridgeRoutingInfo(context).enabled &&
                                     ConfigManager.getConfiguredClashMode(context) == "global"
                                 ) {
                                     "global"
@@ -293,8 +335,8 @@ fun ClashMainScreen(
     fun updateProxyMode(newMode: String) {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val currentOverrides = top.xing2387.mihotier.core.config.OverrideSettingsRepository.load(context)
-                top.xing2387.mihotier.core.config.OverrideSettingsRepository.save(
+                val currentOverrides = OverrideSettingsRepository.load(context)
+                OverrideSettingsRepository.save(
                     context,
                     currentOverrides.copy(enableOverride = true, mode = newMode.lowercase())
                 )
@@ -304,7 +346,7 @@ fun ClashMainScreen(
                     "direct" -> "直连模式"
                     else -> "规则分流"
                 }
-                if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(context).enabled && isRunning) {
+                if (EasyTierRepository.getBridgeRoutingInfo(context).enabled && isRunning) {
                     withContext(Dispatchers.Main) {
                         onRestartVpn()
                         Toast.makeText(context, "模式已切换为 $proxyModeText", Toast.LENGTH_SHORT).show()
@@ -353,36 +395,36 @@ fun ClashMainScreen(
     // Page background
     val pageBgColor = Color(0xFFEEF3F8)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(pageBgColor)
-    ) {
+    Scaffold(
+        containerColor = pageBgColor
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .padding(paddingValues)
                 .padding(horizontal = 16.dp)
-                .padding(top = 16.dp, bottom = 32.dp)
         ) {
-            // Top Bar
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Top Bar (Fixed)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .heightIn(min = 44.dp)
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
                     Text(
                         text = "Clash Meta",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFF0F172A)
                     )
                     Text(
                         text = "for Android",
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         color = Color(0xFF64748B),
                         fontWeight = FontWeight.Normal
                     )
@@ -397,13 +439,14 @@ fun ClashMainScreen(
                             } else {
                                 Toast.makeText(context, "代理未开启", Toast.LENGTH_SHORT).show()
                             }
-                        }
+                        },
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_bolt),
                             contentDescription = "Speed Test",
                             tint = Color(0xFF0F172A),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
@@ -416,22 +459,29 @@ fun ClashMainScreen(
                             } else {
                                 Toast.makeText(context, "代理未开启", Toast.LENGTH_SHORT).show()
                             }
-                        }
+                        },
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Restart",
                             tint = Color(0xFF0F172A),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // 1. Status & Traffic Hero Card (Unified Deep Navy Blue Card matching Figure 1)
-            Card(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // 1. Status & Traffic Hero Card (Unified Deep Navy Blue Card matching Figure 1)
+                Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF104179)),
@@ -791,6 +841,8 @@ fun ClashMainScreen(
                         onClick = { showAboutDialog = true }
                     )
                 }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }

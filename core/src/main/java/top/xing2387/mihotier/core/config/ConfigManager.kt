@@ -1,11 +1,12 @@
 package top.xing2387.mihotier.core.config
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 data class OriginalConfigSnapshot(
@@ -469,7 +470,7 @@ object ConfigManager {
      */
     suspend fun exportOverriddenConfigToUri(
         context: Context,
-        uri: android.net.Uri,
+        uri: Uri,
         overrides: OverrideSettings
     ): Result<Int> {
         return withContext(Dispatchers.IO) {
@@ -645,7 +646,7 @@ object ConfigManager {
     /**
      * Copy a local file URI to the config directory for a specific profile ID.
      */
-    suspend fun copyConfigFromUri(context: Context, uri: android.net.Uri, profileId: String): Result<Unit> {
+    suspend fun copyConfigFromUri(context: Context, uri: Uri, profileId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)

@@ -1,32 +1,58 @@
 package top.xing2387.mihotier.ui.screens
 
+import android.app.Activity
+import android.net.VpnService
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AltRoute
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Hub
-import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +67,12 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.MetaFeaturesSettingsRepository
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
@@ -66,6 +94,7 @@ fun AppSelectionScreen(
     onNavigateToSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         ProfileRepository.init(context)
@@ -77,6 +106,69 @@ fun AppSelectionScreen(
     val easyTierRuntime by EasyTierRepository.runtimeState.collectAsState()
     val currentEasyTierProfile = remember(easyTierProfiles, easyTierSelectedId) {
         easyTierProfiles.find { it.id == easyTierSelectedId } ?: easyTierProfiles.firstOrNull()
+    }
+
+    var isEasyTierTransitioning by remember { mutableStateOf(false) }
+    var easyTierTargetRunning by remember { mutableStateOf<Boolean?>(null) }
+
+    fun startEasyTierNow() {
+        if (isEasyTierTransitioning) return
+        val profile = currentEasyTierProfile
+        if (profile == null) {
+            Toast.makeText(context, "未找到 EasyTier 配置", Toast.LENGTH_SHORT).show()
+            return
+        }
+        isEasyTierTransitioning = true
+        easyTierTargetRunning = true
+        coroutineScope.launch {
+            val res = withContext(Dispatchers.IO) {
+                EasyTierRepository.startNetwork(context, profile)
+            }
+            isEasyTierTransitioning = false
+            easyTierTargetRunning = null
+            if (res.isSuccess) {
+                Toast.makeText(context, "EasyTier 组网已启动", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(
+                    context,
+                    "启动失败: ${res.exceptionOrNull()?.message ?: "配置有误"}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    val easyTierVpnPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            startEasyTierNow()
+        } else {
+            Toast.makeText(context, "未授予 VPN 权限，无法建立虚拟网卡", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun onToggleEasyTier() {
+        if (isEasyTierTransitioning) return
+        if (easyTierRuntime.isRunning) {
+            isEasyTierTransitioning = true
+            easyTierTargetRunning = false
+            coroutineScope.launch {
+                withContext(Dispatchers.IO) {
+                    EasyTierRepository.stopNetwork()
+                }
+                isEasyTierTransitioning = false
+                easyTierTargetRunning = null
+                Toast.makeText(context, "EasyTier 组网已停止", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            val prepareIntent = VpnService.prepare(context)
+            if (prepareIntent != null) {
+                easyTierVpnPermissionLauncher.launch(prepareIntent)
+            } else {
+                startEasyTierNow()
+            }
+        }
     }
 
     val profiles by ProfileRepository.profiles.collectAsState()
@@ -111,7 +203,7 @@ fun AppSelectionScreen(
                                 val json = JSONObject(res.body?.string() ?: "")
                                 val rawM = json.optString("mode", "rule")
                                 val m = if (EasyTierRepository.getBridgeRoutingInfo(context).enabled &&
-                                    top.xing2387.mihotier.core.config.ConfigManager.getConfiguredClashMode(context) == "global"
+                                    ConfigManager.getConfiguredClashMode(context) == "global"
                                 ) {
                                     "global"
                                 } else {
@@ -169,10 +261,11 @@ fun AppSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp)
         ) {
-            // 1. Top Brand & Global Tunnel Status Header
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 1. Top Brand & Global Tunnel Status Header (Fixed)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,7 +297,7 @@ fun AppSelectionScreen(
                             color = Color(0xFF0F172A)
                         )
                         Text(
-                            text = "Mihomo × EasyTier 双核状态总览",
+                            text = "状态总览",
                             fontSize = 12.sp,
                             color = Color(0xFF64748B)
                         )
@@ -215,8 +308,8 @@ fun AppSelectionScreen(
                 val anyTunActive = isRunning || easyTierRuntime.isRunning
                 val tunStatusLabel = when {
                     isRunning && easyTierRuntime.isRunning -> "双核 TUN 运行中"
-                    isRunning -> "TUN 隧道运行中"
-                    easyTierRuntime.isRunning -> "EasyTier TUN 接管"
+                    isRunning -> "Mihomo TUN 运行中"
+                    easyTierRuntime.isRunning -> "EasyTier TUN 运行中"
                     else -> "TUN 待机中"
                 }
                 Surface(
@@ -246,8 +339,14 @@ fun AppSelectionScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Dual-Core Bridge & Real-time Traffic Summary Card
-            Card(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // 2. Dual-Core Bridge & Real-time Traffic Summary Card
+                Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -259,7 +358,12 @@ fun AppSelectionScreen(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    // Topology Strip: Android TUN ⇄ Mihomo ⇄ EasyTier
+                    // Topology Strip:
+                    // - Only EasyTier on: Android TUN ⇄ EasyTier 组网   [Mihomo 核心 (gray)]
+                    // - Only Mihomo on:   Android TUN ⇄ Mihomo 核心     [EasyTier 组网 (gray)]
+                    // - Both on:          Android TUN ⇄ Mihomo 核心 ⇄ EasyTier 组网
+                    // - Both off:         [Android TUN (gray)]   [Mihomo 核心 (gray)]   [EasyTier 组网 (gray)]
+                    val easyTierOnly = !isRunning && easyTierRuntime.isRunning
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -275,30 +379,54 @@ fun AppSelectionScreen(
                             activeBg = Color(0xFFBAE6FD),
                             activeText = Color(0xFF0369A1)
                         )
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = null,
-                            tint = if (isRunning || easyTierRuntime.isRunning) Color(0xFF0369A1) else Color(0xFF94A3B8),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        TopologyNodeChip(
-                            label = "Mihomo 核心",
-                            active = isRunning,
-                            activeBg = Color(0xFFD1FAE5),
-                            activeText = Color(0xFF065F46)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = null,
-                            tint = if (easyTierRuntime.isRunning) Color(0xFF065F46) else Color(0xFF94A3B8),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        TopologyNodeChip(
-                            label = "EasyTier 组网",
-                            active = easyTierRuntime.isRunning,
-                            activeBg = Color(0xFFD1FAE5),
-                            activeText = Color(0xFF065F46)
-                        )
+                        if (isRunning || easyTierRuntime.isRunning) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = null,
+                                tint = Color(0xFF0369A1),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(16.dp))
+                        }
+                        if (easyTierOnly) {
+                            TopologyNodeChip(
+                                label = "EasyTier 组网",
+                                active = true,
+                                activeBg = Color(0xFFD1FAE5),
+                                activeText = Color(0xFF065F46)
+                            )
+                            Spacer(modifier = Modifier.size(16.dp))
+                            TopologyNodeChip(
+                                label = "Mihomo 核心",
+                                active = false,
+                                activeBg = Color(0xFFD1FAE5),
+                                activeText = Color(0xFF065F46)
+                            )
+                        } else {
+                            TopologyNodeChip(
+                                label = "Mihomo 核心",
+                                active = isRunning,
+                                activeBg = Color(0xFFD1FAE5),
+                                activeText = Color(0xFF065F46)
+                            )
+                            if (isRunning && easyTierRuntime.isRunning) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = null,
+                                    tint = Color(0xFF065F46),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(16.dp))
+                            }
+                            TopologyNodeChip(
+                                label = "EasyTier 组网",
+                                active = easyTierRuntime.isRunning,
+                                activeBg = Color(0xFFD1FAE5),
+                                activeText = Color(0xFF065F46)
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -562,13 +690,6 @@ fun AppSelectionScreen(
                                 onClick = onNavigateToSettings
                             )
                         }
-
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                            contentDescription = "Enter Mihomo",
-                            tint = Color(0xFF0369A1),
-                            modifier = Modifier.size(14.dp)
-                        )
                     }
                 }
             }
@@ -617,6 +738,19 @@ fun AppSelectionScreen(
 
                         Spacer(modifier = Modifier.width(14.dp))
 
+                        val easyTierDisplayChecked = easyTierTargetRunning ?: easyTierRuntime.isRunning
+                        val easyTierStatusText = when {
+                            isEasyTierTransitioning && easyTierTargetRunning == true -> "启动中..."
+                            isEasyTierTransitioning && easyTierTargetRunning == false -> "停止中..."
+                            easyTierRuntime.isRunning -> "组网运行中"
+                            else -> "未连接"
+                        }
+                        val easyTierBadgeActive = if (isEasyTierTransitioning) {
+                            easyTierTargetRunning == true
+                        } else {
+                            easyTierRuntime.isRunning
+                        }
+
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
@@ -628,13 +762,13 @@ fun AppSelectionScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (easyTierRuntime.isRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
+                                    color = if (easyTierBadgeActive) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
                                 ) {
                                     Text(
-                                        text = if (easyTierRuntime.isRunning) "组网运行中" else "未连接",
+                                        text = easyTierStatusText,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (easyTierRuntime.isRunning) Color(0xFF065F46) else Color(0xFF64748B),
+                                        color = if (easyTierBadgeActive) Color(0xFF065F46) else Color(0xFF64748B),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp)
                                     )
                                 }
@@ -644,36 +778,38 @@ fun AppSelectionScreen(
                                 text = if (easyTierRuntime.isRunning) {
                                     "当前实例: ${easyTierRuntime.runningProfileName}"
                                 } else {
-                                    "无 TUN 桥接引擎 · 实例: ${currentEasyTierProfile?.instanceName ?: "easytier"}"
+                                    "点击进入 EasyTier 控制台"
                                 },
                                 fontSize = 12.5.sp,
                                 color = Color(0xFF64748B)
                             )
                         }
 
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = Color(0xFFDCFCE7)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "进入",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF065F46)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                                    contentDescription = null,
-                                    tint = Color(0xFF065F46),
-                                    modifier = Modifier.size(11.dp)
-                                )
-                            }
-                        }
+                        Switch(
+                            checked = easyTierDisplayChecked,
+                            onCheckedChange = {
+                                if (!isEasyTierTransitioning) {
+                                    onToggleEasyTier()
+                                }
+                            },
+                            thumbContent = if (isEasyTierTransitioning) {
+                                {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(14.dp),
+                                        strokeWidth = 2.dp,
+                                        color = if (easyTierDisplayChecked) Color(0xFF059669) else Color(0xFF64748B)
+                                    )
+                                }
+                            } else {
+                                null
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = Color(0xFF059669),
+                                uncheckedThumbColor = Color.White,
+                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                            )
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
@@ -754,7 +890,7 @@ fun AppSelectionScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "组网流量可通过 Mihomo 自定义规则按内网网段自动分流转发",
+                            text = "跟Mihomo同时开启时Easytier将作为其中一个节点",
                             fontSize = 11.5.sp,
                             color = Color(0xFF64748B)
                         )
@@ -763,6 +899,7 @@ fun AppSelectionScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

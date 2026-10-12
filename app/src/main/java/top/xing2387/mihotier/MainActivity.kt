@@ -1,16 +1,20 @@
 package top.xing2387.mihotier
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,11 +22,12 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import mobile.Mobile
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.screens.AppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashAppSelectionScreen
-import top.xing2387.mihotier.ui.screens.ClashMainScreen
 import top.xing2387.mihotier.ui.screens.ClashLogsScreen
+import top.xing2387.mihotier.ui.screens.ClashMainScreen
 import top.xing2387.mihotier.ui.screens.ClashMetaFeaturesScreen
 import top.xing2387.mihotier.ui.screens.ClashNetworkSettingsScreen
 import top.xing2387.mihotier.ui.screens.ClashOverrideSettingsScreen
@@ -99,12 +104,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
-        mobile.Mobile.testLogToLogcat("你好，Logcat！")
+        Mobile.testLogToLogcat("你好，Logcat！")
         setContent {
             MihotierTheme {
                 val navController = rememberNavController()

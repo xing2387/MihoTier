@@ -1,6 +1,7 @@
 package top.xing2387.mihotier.ui.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +19,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import top.xing2387.mihotier.core.config.ConfigManager
+import top.xing2387.mihotier.core.config.EasyTierRepository
+import top.xing2387.mihotier.core.config.OverrideSettingsRepository
+import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.screens.ProxyMode
 import top.xing2387.mihotier.ui.screens.ProxyNode
 import top.xing2387.mihotier.ui.screens.SortOrder
@@ -154,7 +158,7 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
                                 val cfgJson = JSONObject(body)
                                 val rawModeStr = cfgJson.optString("mode", "").lowercase()
                                 val app = getApplication<Application>()
-                                val modeStr = if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(app).enabled &&
+                                val modeStr = if (EasyTierRepository.getBridgeRoutingInfo(app).enabled &&
                                     ConfigManager.getConfiguredClashMode(app) == "global"
                                 ) {
                                     "global"
@@ -372,15 +376,15 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
                 ProxyMode.Unchanged -> return@launch
             }
             val app = getApplication<Application>()
-            val currentOverrides = top.xing2387.mihotier.core.config.OverrideSettingsRepository.load(app)
-            top.xing2387.mihotier.core.config.OverrideSettingsRepository.save(
+            val currentOverrides = OverrideSettingsRepository.load(app)
+            OverrideSettingsRepository.save(
                 app,
                 currentOverrides.copy(enableOverride = true, mode = modeStr)
             )
-            if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(app).enabled) {
+            if (EasyTierRepository.getBridgeRoutingInfo(app).enabled) {
                 try {
-                    val intent = android.content.Intent(app, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
-                        action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_RESTART_VPN
+                    val intent = Intent(app, UnifiedVpnService::class.java).apply {
+                        action = UnifiedVpnService.ACTION_RESTART_VPN
                     }
                     app.startService(intent)
                     _state.update { it.copy(proxyMode = mode) }

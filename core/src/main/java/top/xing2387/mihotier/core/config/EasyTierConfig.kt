@@ -1,6 +1,8 @@
 package top.xing2387.mihotier.core.config
 
 import android.content.Context
+import android.content.Intent
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,6 +15,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.easytier.EasyTierNative
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -371,7 +374,7 @@ object EasyTierRepository {
         val toml = profile.toTomlString()
         val validationError = validateToml(toml)
         if (validationError.isNotBlank()) {
-            android.util.Log.e("EasyTierRepo", "Validation error: $validationError")
+            Log.e("EasyTierRepo", "Validation error: $validationError")
             _runtimeState.value = _runtimeState.value.copy(lastError = validationError)
             return Result.failure(IllegalArgumentException(validationError))
         }
@@ -379,7 +382,7 @@ object EasyTierRepository {
         val code = try {
             EasyTierNative.nativeStartEasyTier(toml)
         } catch (e: Throwable) {
-            android.util.Log.e("EasyTierRepo", "Exception starting EasyTier", e)
+            Log.e("EasyTierRepo", "Exception starting EasyTier", e)
             return Result.failure(e)
         }
 
@@ -389,7 +392,7 @@ object EasyTierRepository {
             } catch (_: Throwable) {
                 "未知错误 (code=$code)"
             }
-            android.util.Log.e("EasyTierRepo", "nativeStartEasyTier failed ($code): $err")
+            Log.e("EasyTierRepo", "nativeStartEasyTier failed ($code): $err")
             _runtimeState.value = _runtimeState.value.copy(lastError = err)
             return Result.failure(IllegalStateException(err))
         }
@@ -402,8 +405,8 @@ object EasyTierRepository {
         refreshRuntimeStatus(profile)
         startStatusPolling()
         try {
-            val intent = android.content.Intent(context, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
-                action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
+            val intent = Intent(context, UnifiedVpnService::class.java).apply {
+                action = UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
             }
             context.startService(intent)
         } catch (_: Throwable) {
@@ -425,8 +428,8 @@ object EasyTierRepository {
             )
             appContext?.let { ctx ->
                 try {
-                    val intent = android.content.Intent(ctx, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
-                        action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
+                    val intent = Intent(ctx, UnifiedVpnService::class.java).apply {
+                        action = UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
                     }
                     ctx.startService(intent)
                 } catch (_: Throwable) {
@@ -554,7 +557,7 @@ object EasyTierRepository {
                 logs.add("[ERROR] $errorMsg")
             }
 
-            android.util.Log.d(
+            Log.d(
                 "EasyTierRepo",
                 "Status: ipv4=$ipv4, peers=${peerNodes.size}, routes=${routeItems.size}, events=${logs.size}, err=$errorMsg"
             )
@@ -575,7 +578,7 @@ object EasyTierRepository {
                 lastError = errorMsg
             )
         } catch (e: Throwable) {
-            android.util.Log.e("EasyTierRepo", "refreshRuntimeStatus error", e)
+            Log.e("EasyTierRepo", "refreshRuntimeStatus error", e)
         }
     }
 

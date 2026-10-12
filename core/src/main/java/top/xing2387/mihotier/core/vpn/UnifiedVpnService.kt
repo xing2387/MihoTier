@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Binder
 import android.os.Build
@@ -13,32 +14,44 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import top.xing2387.mihotier.core.config.AppSettingsRepository
-import top.xing2387.mihotier.core.config.BandwidthFormatter
-import top.xing2387.mihotier.core.config.ConfigGenerator
-import top.xing2387.mihotier.easytier.EasyTierNative
-import top.xing2387.mihotier.easytier.SocketProtectCallback
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import mobile.Mobile
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
+import top.xing2387.mihotier.core.config.AppSettingsRepository
+import top.xing2387.mihotier.core.config.BandwidthFormatter
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.NetworkSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
+import top.xing2387.mihotier.easytier.EasyTierNative
+import top.xing2387.mihotier.easytier.SocketProtectCallback
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 
 class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private var easyTierVpnInterface: ParcelFileDescriptor? = null
-    private val tunMutex = kotlinx.coroutines.sync.Mutex()
+    private val tunMutex = Mutex()
 
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -145,8 +158,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         serviceScope.launch {
             try {
                 stopVpnInternal(shouldStopSelf = false)
-                delay(500)
-                startVpn()
+                startVpnInternal()
             } finally {
                 isRestartingVpn = false
             }
@@ -155,24 +167,30 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private fun startVpn() {
         if (_isRunning.value) return
+        serviceScope.launch {
+            startVpnInternal()
+        }
+    }
+
+    private suspend fun startVpnInternal() {
+        if (_isRunning.value) return
         _isRunning.value = true
 
         EasyTierRepository.init(this@UnifiedVpnService)
         val initialBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
         appliedEasyTierSignature = "${initialBridge.enabled}:${initialBridge.socks5Port}:${initialBridge.cidrStrings.sorted().joinToString(",")}"
 
-        serviceScope.launch {
-            try {
-                // If EasyTier was directly holding the Android TUN fd, detach and close it first
-                stopEasyTierStandaloneTun()
+        try {
+            // If EasyTier was directly holding the Android TUN fd, detach and close it first
+            stopEasyTierStandaloneTun()
 
-                // 3. Start Mihomo/Sing-box Core
-                top.xing2387.mihotier.core.config.ProfileRepository.init(this@UnifiedVpnService)
-                val easyTierBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
-                appliedEasyTierSignature = "${easyTierBridge.enabled}:${easyTierBridge.socks5Port}:${easyTierBridge.cidrStrings.sorted().joinToString(",")}"
+            // 3. Start Mihomo/Sing-box Core
+            ProfileRepository.init(this@UnifiedVpnService)
+            val easyTierBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
+            appliedEasyTierSignature = "${easyTierBridge.enabled}:${easyTierBridge.socks5Port}:${easyTierBridge.cidrStrings.sorted().joinToString(",")}"
 
-                val configStr = ConfigManager.getConfig(this@UnifiedVpnService)
-                val configuredMode = ConfigManager.getConfiguredClashMode(this@UnifiedVpnService)
+            val configStr = ConfigManager.getConfig(this@UnifiedVpnService)
+            val configuredMode = ConfigManager.getConfiguredClashMode(this@UnifiedVpnService)
                 currentModeName = when (configuredMode) {
                     "global" -> "全局"
                     "direct" -> "直连"
@@ -232,10 +250,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 }
 
                 // System HTTP Proxy (Android Q+)
-                if (netSettings.systemProxy && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                if (netSettings.systemProxy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     try {
                         val port = Regex("""(?m)^(?:mixed-port|port):\s*(\d+)""").find(configStr)?.groupValues?.get(1)?.toIntOrNull() ?: 7890
-                        builder.setHttpProxy(android.net.ProxyInfo.buildDirectProxy("127.0.0.1", port))
+                        builder.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to set HTTP proxy info", e)
                     }
@@ -287,7 +305,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 Log.i(TAG, "Preparing to start Mihomo via JNI with config length: ${configStr.length}")
                 withContext(Dispatchers.IO) {
                     try {
-                        mobile.Mobile.startWithFd(filesDir.absolutePath, configStr, fd.toLong())
+                        Mobile.startWithFd(filesDir.absolutePath, configStr, fd.toLong())
                         Log.i(TAG, "Mihomo started successfully!")
                     } catch (e: Exception) {
                         Log.e(TAG, "Mihomo startWithFd threw exception!", e)
@@ -307,10 +325,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 // 5. Start Traffic Polling
                 startTrafficPolling()
 
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start VPN", e)
-                stopVpn()
-            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start VPN", e)
+            stopVpn()
         }
     }
 
@@ -386,11 +403,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     private fun copyAssetsToHomeDir() {
         val assetsToCopy = listOf("geoip.metadb", "geosite.dat", "country.mmdb")
         for (assetName in assetsToCopy) {
-            val outFile = java.io.File(filesDir, assetName)
+            val outFile = File(filesDir, assetName)
             if (!outFile.exists()) {
                 try {
                     assets.open(assetName).use { input ->
-                        java.io.FileOutputStream(outFile).use { output ->
+                        FileOutputStream(outFile).use { output ->
                             input.copyTo(output)
                         }
                     }
@@ -406,9 +423,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         try {
             val pm = applicationContext.packageManager
             val packages = pm.getInstalledPackages(0)
-            val jsonArray = org.json.JSONArray()
+            val jsonArray = JSONArray()
             for (pkg in packages) {
-                val obj = org.json.JSONObject()
+                val obj = JSONObject()
                 obj.put("packageName", pkg.packageName)
                 obj.put("uid", pkg.applicationInfo?.uid ?: 0)
                 jsonArray.put(obj)
@@ -423,7 +440,6 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private fun ensureGlobalDefaultNode() {
         serviceScope.launch {
-            delay(300)
             try {
                 val req = Request.Builder().url("http://127.0.0.1:9090/proxies/GLOBAL").get().build()
                 httpClient.newCall(req).execute().use { res ->
@@ -601,7 +617,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
-    private suspend fun stopEasyTierStandaloneTunLocked() {
+    private fun stopEasyTierStandaloneTunLocked() {
         if (_isEasyTierTunActive.value || easyTierVpnInterface != null) {
             Log.i(TAG, "Stopping EasyTier Standalone TUN")
             _isEasyTierTunActive.value = false
@@ -611,7 +627,6 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             } catch (e: Throwable) {
                 Log.w(TAG, "nativeSetTunFd(0) error", e)
             }
-            delay(80)
             try {
                 easyTierVpnInterface?.close()
             } catch (e: Exception) {
@@ -708,7 +723,6 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
         if (shouldStopSelf) {
             if (EasyTierRepository.runtimeState.value.isRunning) {
-                delay(200)
                 syncEasyTierStandaloneTun()
             } else {
                 stopSelf()
