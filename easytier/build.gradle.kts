@@ -11,7 +11,7 @@ android {
     defaultConfig {
         minSdk = 24
         ndk {
-            abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
+            abiFilters.addAll(listOf("arm64-v8a"))
         }
     }
 
@@ -62,10 +62,7 @@ val cargoBuild = tasks.register<Exec>("cargoBuild") {
 
     commandLine(
         "cargo", "ndk",
-        "-t", "armeabi-v7a",
         "-t", "arm64-v8a",
-        "-t", "x86",
-        "-t", "x86_64",
         "-o", outDir.absolutePath,
         "build", "--release"
     )

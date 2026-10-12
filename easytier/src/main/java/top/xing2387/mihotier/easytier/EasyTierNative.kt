@@ -8,7 +8,7 @@ interface SocketProtectCallback {
 }
 
 /**
- * JNI Wrapper for EasyTier Rust Core.
+ * JNI Wrapper for EasyTier Rust Core (`easytier-core`).
  */
 object EasyTierNative {
     init {
@@ -16,17 +16,28 @@ object EasyTierNative {
     }
 
     /**
-     * Starts EasyTier node.
-     * @param configJson The configuration JSON string (network name, secret, peers, etc).
+     * Validates an EasyTier TOML configuration string via `easytier_core::config::toml::TomlConfig`.
+     * @return empty string if valid, or error description if invalid.
+     */
+    external fun nativeValidateConfig(configToml: String): String
+
+    /**
+     * Starts EasyTier node with the given TOML configuration.
+     * @param configToml The EasyTier TOML configuration string.
      * @return 0 for success, non-zero for error.
      */
-    external fun nativeStartEasyTier(configJson: String): Int
+    external fun nativeStartEasyTier(configToml: String): Int
 
     /**
      * Stops the EasyTier node.
      * @return 0 for success, non-zero for error.
      */
     external fun nativeStopEasyTier(): Int
+
+    /**
+     * Gets the last error message from native EasyTier operations.
+     */
+    external fun nativeGetLastError(): String
 
     /**
      * Gets the current status of the EasyTier node (JSON format).

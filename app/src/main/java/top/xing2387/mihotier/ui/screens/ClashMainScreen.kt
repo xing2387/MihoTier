@@ -230,7 +230,14 @@ fun ClashMainScreen(
                         httpClient.newCall(configReq).execute().use { res ->
                             if (res.isSuccessful) {
                                 val json = JSONObject(res.body?.string() ?: "")
-                                val m = json.optString("mode", "rule")
+                                val rawM = json.optString("mode", "rule")
+                                val m = if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(context).enabled &&
+                                    ConfigManager.getConfiguredClashMode(context) == "global"
+                                ) {
+                                    "global"
+                                } else {
+                                    rawM
+                                }
                                 rawProxyMode = m
                                 proxyModeText = when (m.lowercase()) {
                                     "global" -> "全局代理"
@@ -286,19 +293,31 @@ fun ClashMainScreen(
     fun updateProxyMode(newMode: String) {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val httpClient = OkHttpClient.Builder().connectTimeout(2, TimeUnit.SECONDS).build()
-                val body = "{\"mode\":\"$newMode\"}".toRequestBody("application/json".toMediaType())
-                val req = Request.Builder().url("http://127.0.0.1:9090/configs").patch(body).build()
-                httpClient.newCall(req).execute().use { res ->
-                    if (res.isSuccessful) {
-                        rawProxyMode = newMode
-                        proxyModeText = when (newMode.lowercase()) {
-                            "global" -> "全局代理"
-                            "direct" -> "直连模式"
-                            else -> "规则分流"
-                        }
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "模式已切换为 $proxyModeText", Toast.LENGTH_SHORT).show()
+                val currentOverrides = top.xing2387.mihotier.core.config.OverrideSettingsRepository.load(context)
+                top.xing2387.mihotier.core.config.OverrideSettingsRepository.save(
+                    context,
+                    currentOverrides.copy(enableOverride = true, mode = newMode.lowercase())
+                )
+                rawProxyMode = newMode
+                proxyModeText = when (newMode.lowercase()) {
+                    "global" -> "全局代理"
+                    "direct" -> "直连模式"
+                    else -> "规则分流"
+                }
+                if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(context).enabled && isRunning) {
+                    withContext(Dispatchers.Main) {
+                        onRestartVpn()
+                        Toast.makeText(context, "模式已切换为 $proxyModeText", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    val httpClient = OkHttpClient.Builder().connectTimeout(2, TimeUnit.SECONDS).build()
+                    val body = "{\"mode\":\"$newMode\"}".toRequestBody("application/json".toMediaType())
+                    val req = Request.Builder().url("http://127.0.0.1:9090/configs").patch(body).build()
+                    httpClient.newCall(req).execute().use { res ->
+                        if (res.isSuccessful) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "模式已切换为 $proxyModeText", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }

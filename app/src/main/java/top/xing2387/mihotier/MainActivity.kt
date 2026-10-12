@@ -30,6 +30,7 @@ import top.xing2387.mihotier.ui.screens.ClashProfileDetailScreen
 import top.xing2387.mihotier.ui.screens.ClashProfilesScreen
 import top.xing2387.mihotier.ui.screens.ClashProxyScreen
 import top.xing2387.mihotier.ui.screens.ClashSettingsScreen
+import top.xing2387.mihotier.ui.screens.EasyTierScreen
 import top.xing2387.mihotier.ui.theme.MihotierTheme
 
 class MainActivity : ComponentActivity() {
@@ -118,11 +119,16 @@ class MainActivity : ComponentActivity() {
                             trafficStats = stats,
                             onToggleVpn = { toggleVpn() },
                             onNavigateToClash = { navController.navigate("clash") },
-                            onNavigateToEasyTier = { /* TODO: Navigate to EasyTier */ },
+                            onNavigateToEasyTier = { navController.navigate("easytier") },
                             onNavigateToProxy = { navController.navigate("clash_proxy") },
                             onNavigateToProfiles = { navController.navigate("clash_profiles") },
                             onNavigateToOverride = { navController.navigate("clash_settings_override") },
                             onNavigateToSettings = { navController.navigate("clash_settings") }
+                        )
+                    }
+                    composable("easytier") {
+                        EasyTierScreen(
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
                     composable("clash") {

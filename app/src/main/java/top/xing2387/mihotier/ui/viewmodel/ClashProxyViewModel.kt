@@ -152,7 +152,15 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
                             val body = resp.body?.string()
                             if (body != null) {
                                 val cfgJson = JSONObject(body)
-                                val modeStr = cfgJson.optString("mode", "").lowercase()
+                                val rawModeStr = cfgJson.optString("mode", "").lowercase()
+                                val app = getApplication<Application>()
+                                val modeStr = if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(app).enabled &&
+                                    ConfigManager.getConfiguredClashMode(app) == "global"
+                                ) {
+                                    "global"
+                                } else {
+                                    rawModeStr
+                                }
                                 val mode = when (modeStr) {
                                     "direct" -> ProxyMode.Direct
                                     "global" -> ProxyMode.Global
@@ -362,6 +370,24 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
                 ProxyMode.Global -> "global"
                 ProxyMode.Rule -> "rule"
                 ProxyMode.Unchanged -> return@launch
+            }
+            val app = getApplication<Application>()
+            val currentOverrides = top.xing2387.mihotier.core.config.OverrideSettingsRepository.load(app)
+            top.xing2387.mihotier.core.config.OverrideSettingsRepository.save(
+                app,
+                currentOverrides.copy(enableOverride = true, mode = modeStr)
+            )
+            if (top.xing2387.mihotier.core.config.EasyTierRepository.getBridgeRoutingInfo(app).enabled) {
+                try {
+                    val intent = android.content.Intent(app, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
+                        action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_RESTART_VPN
+                    }
+                    app.startService(intent)
+                    _state.update { it.copy(proxyMode = mode) }
+                } catch (e: Exception) {
+                    _state.update { it.copy(error = "Failed to switch mode: ${e.message}") }
+                }
+                return@launch
             }
             try {
                 val jsonBody = JSONObject().put("mode", modeStr).toString()

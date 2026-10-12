@@ -369,7 +369,7 @@ fun ClashProxyScreen(
     }
 
     if (showRulesDialog) {
-        val yamlText = remember {
+        val yamlText = remember(state.proxyMode) {
             try {
                 ConfigManager.getConfig(context)
             } catch (e: Exception) {

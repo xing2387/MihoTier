@@ -23,10 +23,13 @@ import top.xing2387.mihotier.core.config.ConfigGenerator
 import top.xing2387.mihotier.easytier.EasyTierNative
 import top.xing2387.mihotier.easytier.SocketProtectCallback
 import mobile.Mobile
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import top.xing2387.mihotier.core.config.ConfigManager
+import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.NetworkSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
 import java.util.concurrent.TimeUnit
@@ -66,6 +69,12 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     @Volatile
     private var isForegroundActive: Boolean = false
 
+    @Volatile
+    private var appliedEasyTierSignature: String = ""
+
+    @Volatile
+    private var isRestartingVpn: Boolean = false
+
     private val binder = LocalBinder()
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var trafficPollingJob: Job? = null
@@ -77,6 +86,19 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "UnifiedVpnService created")
+        EasyTierRepository.init(this)
+        serviceScope.launch {
+            EasyTierRepository.runtimeState.collect {
+                if (_isRunning.value && !isRestartingVpn) {
+                    val info = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
+                    val newSig = "${info.enabled}:${info.socks5Port}:${info.cidrStrings.sorted().joinToString(",")}"
+                    if (newSig != appliedEasyTierSignature) {
+                        Log.i(TAG, "EasyTier routing changed ($appliedEasyTierSignature -> $newSig), reloading VPN")
+                        restartVpn()
+                    }
+                }
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -84,10 +106,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_START_VPN) {
-            startVpn()
-        } else if (intent?.action == ACTION_STOP_VPN) {
-            stopVpn()
+        when (intent?.action) {
+            ACTION_START_VPN -> startVpn()
+            ACTION_STOP_VPN -> stopVpn()
+            ACTION_RESTART_VPN -> restartVpn()
         }
         return START_STICKY
     }
@@ -101,11 +123,15 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     }
 
     fun restartVpn() {
-        if (_isRunning.value) {
-            stopVpn()
-            serviceScope.launch {
-                kotlinx.coroutines.delay(600)
+        if (!_isRunning.value || isRestartingVpn) return
+        isRestartingVpn = true
+        serviceScope.launch {
+            try {
+                stopVpnInternal(shouldStopSelf = false)
+                delay(500)
                 startVpn()
+            } finally {
+                isRestartingVpn = false
             }
         }
     }
@@ -114,21 +140,20 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         if (_isRunning.value) return
         _isRunning.value = true
 
+        EasyTierRepository.init(this@UnifiedVpnService)
+        val initialBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
+        appliedEasyTierSignature = "${initialBridge.enabled}:${initialBridge.socks5Port}:${initialBridge.cidrStrings.sorted().joinToString(",")}"
+
         serviceScope.launch {
             try {
-                // 1. Setup EasyTier Socket Protection Callback
-                // EasyTierNative.nativeSetProtectSocketCallback(this@UnifiedVpnService)
-
-                // 2. Start EasyTier Core on local SOCKS5 port
-                // val easyTierConfig = """{"network_name": "default", "network_secret": "default"}"""
-                // EasyTierNative.nativeStartEasyTier(easyTierConfig)
-                // Log.i(TAG, "EasyTier core started on local SOCKS5")
-
                 // 3. Start Mihomo/Sing-box Core
                 top.xing2387.mihotier.core.config.ProfileRepository.init(this@UnifiedVpnService)
+                val easyTierBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
+                appliedEasyTierSignature = "${easyTierBridge.enabled}:${easyTierBridge.socks5Port}:${easyTierBridge.cidrStrings.sorted().joinToString(",")}"
+
                 val configStr = ConfigManager.getConfig(this@UnifiedVpnService)
-                val parsedMode = Regex("""(?m)^mode:\s*(\w+)""").find(configStr)?.groupValues?.get(1)?.lowercase() ?: "rule"
-                currentModeName = when (parsedMode) {
+                val configuredMode = ConfigManager.getConfiguredClashMode(this@UnifiedVpnService)
+                currentModeName = when (configuredMode) {
                     "global" -> "全局"
                     "direct" -> "直连"
                     "rule" -> "规则"
@@ -164,11 +189,21 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                     builder.addDnsServer("198.18.0.2")
                 }
 
-                // Routes (Route System Traffic & Bypass Private Networks)
+                // Routes (Route System Traffic & Bypass Private Networks + EasyTier Virtual Subnets)
                 if (netSettings.routeSystemTraffic) {
-                    addRoutes(builder, netSettings.bypassPrivateNetwork)
+                    addRoutes(builder, netSettings.bypassPrivateNetwork, easyTierBridge.cidrs)
                 } else {
                     builder.addRoute("198.18.0.0", 15)
+                    for ((addr, prefix) in easyTierBridge.cidrs) {
+                        try {
+                            builder.addRoute(addr, prefix)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to add EasyTier route $addr/$prefix", e)
+                        }
+                    }
+                }
+                if (easyTierBridge.cidrs.isNotEmpty()) {
+                    Log.i(TAG, "EasyTier VPN routes active: ${easyTierBridge.cidrStrings} -> SOCKS5 127.0.0.1:${easyTierBridge.socks5Port}")
                 }
 
                 // Allow apps to bypass VPN
@@ -179,7 +214,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 // System HTTP Proxy (Android Q+)
                 if (netSettings.systemProxy && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     try {
-                        val port = Regex("""(?:mixed-port|port):\s*(\d+)""").find(configStr)?.groupValues?.get(1)?.toIntOrNull() ?: 7890
+                        val port = Regex("""(?m)^(?:mixed-port|port):\s*(\d+)""").find(configStr)?.groupValues?.get(1)?.toIntOrNull() ?: 7890
                         builder.setHttpProxy(android.net.ProxyInfo.buildDirectProxy("127.0.0.1", port))
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed to set HTTP proxy info", e)
@@ -240,6 +275,8 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                     }
                 }
 
+                ensureGlobalDefaultNode()
+
                 // 4. Start Foreground Notification (if enabled in settings)
                 if (AppSettingsRepository.isShowSpeedNotification(this@UnifiedVpnService)) {
                     updateNotification(0L, 0L)
@@ -257,7 +294,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
-    private fun addRoutes(builder: Builder, bypassPrivateNetwork: Boolean) {
+    private fun addRoutes(
+        builder: Builder,
+        bypassPrivateNetwork: Boolean,
+        easyTierCidrs: List<Pair<String, Int>> = emptyList()
+    ) {
         if (!bypassPrivateNetwork) {
             builder.addRoute("0.0.0.0", 0)
             return
@@ -311,6 +352,15 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 Log.w(TAG, "Failed to add route $addr/$prefix", e)
             }
         }
+        // Explicitly route EasyTier virtual LAN and subnet proxy CIDRs into the VPN TUN
+        // even when private RFC1918 networks are bypassed.
+        for ((addr, prefix) in easyTierCidrs) {
+            try {
+                builder.addRoute(addr, prefix)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to add EasyTier route $addr/$prefix", e)
+            }
+        }
     }
 
     private fun copyAssetsToHomeDir() {
@@ -351,6 +401,41 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
+    private fun ensureGlobalDefaultNode() {
+        serviceScope.launch {
+            delay(300)
+            try {
+                val req = Request.Builder().url("http://127.0.0.1:9090/proxies/GLOBAL").get().build()
+                httpClient.newCall(req).execute().use { res ->
+                    if (!res.isSuccessful) return@use
+                    val obj = JSONObject(res.body?.string() ?: return@use)
+                    val now = obj.optString("now", "")
+                    if (now == "DIRECT" || now == "REJECT" || now == "EasyTier-内网桥接" || now.isBlank()) {
+                        val allArr = obj.optJSONArray("all") ?: return@use
+                        var candidate = ""
+                        for (i in 0 until allArr.length()) {
+                            val item = allArr.optString(i)
+                            if (item !in setOf("DIRECT", "REJECT", "EasyTier-内网桥接", "GLOBAL") && item.isNotBlank()) {
+                                candidate = item
+                                break
+                            }
+                        }
+                        if (candidate.isNotBlank()) {
+                            val bodyStr = JSONObject().put("name", candidate).toString()
+                            val putReq = Request.Builder()
+                                .url("http://127.0.0.1:9090/proxies/GLOBAL")
+                                .put(bodyStr.toRequestBody("application/json".toMediaType()))
+                                .build()
+                            httpClient.newCall(putReq).execute().close()
+                            Log.i(TAG, "Auto-selected default GLOBAL proxy node: $candidate")
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     private fun startTrafficPolling() {
         trafficPollingJob?.cancel()
         trafficPollingJob = serviceScope.launch {
@@ -367,7 +452,14 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                         httpClient.newCall(req).execute().use { res ->
                             if (res.isSuccessful) {
                                 val json = JSONObject(res.body?.string() ?: "")
-                                val m = json.optString("mode", "").lowercase()
+                                val rawM = json.optString("mode", "").lowercase()
+                                val m = if (EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService).enabled &&
+                                    ConfigManager.getConfiguredClashMode(this@UnifiedVpnService) == "global"
+                                ) {
+                                    "global"
+                                } else {
+                                    rawM
+                                }
                                 if (m.isNotEmpty()) {
                                     currentModeName = when (m) {
                                         "global" -> "全局"
@@ -482,6 +574,13 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private fun stopVpn() {
         if (!_isRunning.value) return
+        serviceScope.launch {
+            stopVpnInternal(shouldStopSelf = true)
+        }
+    }
+
+    private suspend fun stopVpnInternal(shouldStopSelf: Boolean) {
+        if (!_isRunning.value) return
         _isRunning.value = false
 
         trafficPollingJob?.cancel()
@@ -489,26 +588,22 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         _trafficStats.value = TrafficStats()
         cancelNotification()
 
-        serviceScope.launch {
-            try {
-                // Stop Mihomo - Mobile.stop() will also close the fd on the Go side,
-                // since we transferred ownership via detachFd().
-                Mobile.stop()
-                Log.i(TAG, "Mihomo core stopped")
+        try {
+            // Stop Mihomo - Mobile.stop() will also close the fd on the Go side,
+            // since we transferred ownership via detachFd().
+            Mobile.stop()
+            Log.i(TAG, "Mihomo core stopped")
 
-                // Stop EasyTier
-                // EasyTierNative.nativeStopEasyTier()
-                // Log.i(TAG, "EasyTier core stopped")
+            // fd ownership was transferred to Go via detachFd(), so do NOT call
+            // vpnInterface.close() here (the fd is already closed by Go).
+            // Just null out the reference so Android knows the VPN is down.
+            vpnInterface = null
+            Log.i(TAG, "VPN Tunnel closed")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping VPN", e)
+        }
 
-                // fd ownership was transferred to Go via detachFd(), so do NOT call
-                // vpnInterface.close() here (the fd is already closed by Go).
-                // Just null out the reference so Android knows the VPN is down.
-                vpnInterface = null
-                Log.i(TAG, "VPN Tunnel closed")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error stopping VPN", e)
-            }
-            
+        if (shouldStopSelf) {
             stopSelf()
         }
     }
@@ -529,6 +624,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         const val TAG = "UnifiedVpnService"
         const val ACTION_START_VPN = "top.xing2387.mihotier.action.START"
         const val ACTION_STOP_VPN = "top.xing2387.mihotier.action.STOP"
+        const val ACTION_RESTART_VPN = "top.xing2387.mihotier.action.RESTART"
         const val NOTIFICATION_CHANNEL_ID = "mihotier_vpn_traffic"
         const val NOTIFICATION_ID = 1001
     }

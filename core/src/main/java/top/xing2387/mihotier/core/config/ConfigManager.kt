@@ -223,6 +223,26 @@ object ConfigManager {
     }
 
     /**
+     * Get the user's configured Clash mode ("global", "rule", or "direct") before EasyTier rule-mode conversion.
+     */
+    fun getConfiguredClashMode(context: Context): String {
+        ProfileRepository.init(context)
+        val overrides = OverrideSettingsRepository.load(context)
+        if (overrides.enableOverride && overrides.mode != "Keep" && overrides.mode.isNotBlank()) {
+            return overrides.mode.trim().lowercase()
+        }
+        val activeProfile = ProfileRepository.getActiveProfile()
+        var yaml = DEFAULT_FALLBACK_YAML
+        if (activeProfile != null) {
+            val file = File(getConfigDir(context), "${activeProfile.id}.yaml")
+            if (file.exists()) {
+                yaml = file.readText()
+            }
+        }
+        return Regex("""(?m)^mode\s*:\s*(\w+)""").find(yaml)?.groupValues?.get(1)?.lowercase() ?: "rule"
+    }
+
+    /**
      * Generate the overridden YAML string for the active profile using the provided [overrides].
      */
     fun generateOverriddenConfig(context: Context, overrides: OverrideSettings): String {
@@ -246,7 +266,139 @@ object ConfigManager {
             yaml = applyMetaFeatures(yaml, meta)
         }
 
+        yaml = applyEasyTierBridge(context, yaml)
+
         return yaml
+    }
+
+    private fun applyEasyTierBridge(
+        context: Context,
+        rawYaml: String
+    ): String {
+        val bridgeInfo = EasyTierRepository.getBridgeRoutingInfo(context)
+        if (!bridgeInfo.enabled || bridgeInfo.cidrs.isEmpty()) {
+            return rawYaml
+        }
+
+        var yaml = rawYaml
+        val proxyName = "EasyTier-内网桥接"
+        val proxyItem = """{ name: "$proxyName", type: socks5, server: 127.0.0.1, port: ${bridgeInfo.socks5Port}, udp: true }"""
+
+        if (!yaml.contains(proxyName)) {
+            yaml = prependYamlSequenceItems(
+                rawYaml = yaml,
+                blockName = "proxies",
+                newItems = listOf(proxyItem),
+                insertBeforeRulesIfMissing = true
+            )
+        }
+
+        val easyTierRules = bridgeInfo.cidrStrings.map { cidr ->
+            "IP-CIDR,$cidr,$proxyName,no-resolve"
+        }
+
+        val globalModeRegex = Regex("""(?m)^mode\s*:\s*global\s*$""", RegexOption.IGNORE_CASE)
+        val isGlobalMode = globalModeRegex.containsMatchIn(yaml)
+
+        if (isGlobalMode) {
+            // When Clash is in Global mode and EasyTier is running:
+            // 1. Switch engine mode to `rule` so Mihomo evaluates the rule table
+            // 2. Inject ONLY two rule groups: EasyTier subnet -> EasyTier-内网桥接, and MATCH -> GLOBAL
+            yaml = globalModeRegex.replaceFirst(yaml, "mode: rule")
+            val globalBridgeRules = easyTierRules + "MATCH,GLOBAL"
+            yaml = replaceRulesBlock(yaml, globalBridgeRules)
+        } else {
+            val missingRules = easyTierRules.filter { rule -> !yaml.contains(rule) }
+            if (missingRules.isNotEmpty()) {
+                yaml = prependYamlSequenceItems(
+                    rawYaml = yaml,
+                    blockName = "rules",
+                    newItems = missingRules,
+                    insertBeforeRulesIfMissing = false
+                )
+            }
+        }
+
+        return yaml
+    }
+
+    private fun replaceRulesBlock(rawYaml: String, newRules: List<String>): String {
+        val lines = rawYaml.lines()
+        val startIndex = lines.indexOfFirst { it.matches(Regex("""^rules\s*:.*""")) }
+        val newBlockLines = listOf("rules:") + newRules.map { "  - $it" }
+
+        if (startIndex == -1) {
+            return (lines + newBlockLines).joinToString("\n")
+        }
+
+        var endIndex = startIndex
+        for (i in (startIndex + 1) until lines.size) {
+            val line = lines[i]
+            val trimmed = line.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                endIndex = i
+                continue
+            }
+            val isIndented = line.startsWith(" ") || line.startsWith("\t")
+            val isListItem = trimmed.startsWith("-")
+            if (isIndented || isListItem) {
+                endIndex = i
+            } else {
+                break
+            }
+        }
+
+        val before = lines.subList(0, startIndex)
+        val after = lines.subList(endIndex + 1, lines.size)
+        return (before + newBlockLines + after).joinToString("\n")
+    }
+
+    private fun prependYamlSequenceItems(
+        rawYaml: String,
+        blockName: String,
+        newItems: List<String>,
+        insertBeforeRulesIfMissing: Boolean
+    ): String {
+        if (newItems.isEmpty()) return rawYaml
+        val lines = rawYaml.lines().toMutableList()
+        val headerRegex = Regex("""^${Regex.escape(blockName)}\s*:(?:\s*#.*|\s*\[\s*\])?\s*$""")
+        val startIndex = lines.indexOfFirst { headerRegex.matches(it) }
+
+        if (startIndex == -1) {
+            val blockLines = listOf("$blockName:") + newItems.map { "  - $it" }
+            if (insertBeforeRulesIfMissing) {
+                val rulesIdx = lines.indexOfFirst { it.matches(Regex("""^rules\s*:.*""")) }
+                if (rulesIdx != -1) {
+                    lines.addAll(rulesIdx, blockLines)
+                    return lines.joinToString("\n")
+                }
+            }
+            lines.addAll(blockLines)
+            return lines.joinToString("\n")
+        }
+
+        val headerLine = lines[startIndex]
+        if (headerLine.contains("[") && headerLine.contains("]")) {
+            lines[startIndex] = "$blockName:"
+            lines.addAll(startIndex + 1, newItems.map { "  - $it" })
+            return lines.joinToString("\n")
+        }
+
+        var indent = "  "
+        var insertAt = startIndex + 1
+        for (i in (startIndex + 1) until lines.size) {
+            val line = lines[i]
+            val trimmed = line.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
+            if (trimmed.startsWith("-")) {
+                indent = line.takeWhile { it == ' ' || it == '\t' }
+                insertAt = i
+            }
+            break
+        }
+
+        lines.addAll(insertAt, newItems.map { "$indent- $it" })
+        return lines.joinToString("\n")
     }
 
     private fun applyMetaFeatures(rawYaml: String, meta: MetaFeaturesSettings): String {

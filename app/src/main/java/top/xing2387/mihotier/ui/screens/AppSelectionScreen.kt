@@ -45,6 +45,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.MetaFeaturesSettingsRepository
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
@@ -68,6 +69,14 @@ fun AppSelectionScreen(
 
     LaunchedEffect(Unit) {
         ProfileRepository.init(context)
+        EasyTierRepository.init(context)
+    }
+
+    val easyTierProfiles by EasyTierRepository.profiles.collectAsState()
+    val easyTierSelectedId by EasyTierRepository.selectedProfileId.collectAsState()
+    val easyTierRuntime by EasyTierRepository.runtimeState.collectAsState()
+    val currentEasyTierProfile = remember(easyTierProfiles, easyTierSelectedId) {
+        easyTierProfiles.find { it.id == easyTierSelectedId } ?: easyTierProfiles.firstOrNull()
     }
 
     val profiles by ProfileRepository.profiles.collectAsState()
@@ -100,7 +109,14 @@ fun AppSelectionScreen(
                         httpClient.newCall(configReq).execute().use { res ->
                             if (res.isSuccessful) {
                                 val json = JSONObject(res.body?.string() ?: "")
-                                val m = json.optString("mode", "rule")
+                                val rawM = json.optString("mode", "rule")
+                                val m = if (EasyTierRepository.getBridgeRoutingInfo(context).enabled &&
+                                    top.xing2387.mihotier.core.config.ConfigManager.getConfiguredClashMode(context) == "global"
+                                ) {
+                                    "global"
+                                } else {
+                                    rawM
+                                }
                                 proxyModeText = when (m.lowercase()) {
                                     "global" -> "全局代理 (Global)"
                                     "direct" -> "直连模式 (Direct)"
@@ -267,14 +283,14 @@ fun AppSelectionScreen(
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
                             contentDescription = null,
-                            tint = Color(0xFF94A3B8),
+                            tint = if (easyTierRuntime.isRunning) Color(0xFF065F46) else Color(0xFF94A3B8),
                             modifier = Modifier.size(16.dp)
                         )
                         TopologyNodeChip(
                             label = "EasyTier 组网",
-                            active = false,
-                            activeBg = Color(0xFFE0E7FF),
-                            activeText = Color(0xFF3730A3)
+                            active = easyTierRuntime.isRunning,
+                            activeBg = Color(0xFFD1FAE5),
+                            activeText = Color(0xFF065F46)
                         )
                     }
 
@@ -422,7 +438,7 @@ fun AppSelectionScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "Mihomo (Clash.Meta)",
+                                    text = "Mihomo",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0F172A)
@@ -558,11 +574,13 @@ fun AppSelectionScreen(
                     .fillMaxWidth()
                     .clickable {
                         onNavigateToEasyTier()
-                        Toast.makeText(context, "EasyTier 控制台即将接入", Toast.LENGTH_SHORT).show()
                     },
                 shape = RoundedCornerShape(22.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                border = BorderStroke(
+                    1.dp,
+                    if (easyTierRuntime.isRunning) Color(0xFF6EE7B7) else Color(0xFFE2E8F0)
+                ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -595,7 +613,7 @@ fun AppSelectionScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "EasyTier 异地组网",
+                                    text = "EasyTier",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0F172A)
@@ -603,20 +621,24 @@ fun AppSelectionScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFFF1F5F9)
+                                    color = if (easyTierRuntime.isRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
                                 ) {
                                     Text(
-                                        text = "未连接",
+                                        text = if (easyTierRuntime.isRunning) "组网运行中" else "未连接",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF64748B),
+                                        color = if (easyTierRuntime.isRunning) Color(0xFF065F46) else Color(0xFF64748B),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp)
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
-                                text = "无 TUN 桥接引擎",
+                                text = if (easyTierRuntime.isRunning) {
+                                    "当前实例: ${easyTierRuntime.runningProfileName}"
+                                } else {
+                                    "无 TUN 桥接引擎 · 实例: ${currentEasyTierProfile?.instanceName ?: "easytier"}"
+                                },
                                 fontSize = 12.5.sp,
                                 color = Color(0xFF64748B)
                             )
@@ -631,7 +653,7 @@ fun AppSelectionScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "详情",
+                                    text = "进入",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFF065F46)
@@ -657,13 +679,23 @@ fun AppSelectionScreen(
                         OverviewMetricCell(
                             modifier = Modifier.weight(1f),
                             label = "虚拟内网 IPv4",
-                            value = "未分配 (待组网)",
-                            highlight = false
+                            value = if (easyTierRuntime.isRunning) {
+                                easyTierRuntime.allocatedIpv4
+                            } else if (currentEasyTierProfile?.dhcp == true) {
+                                "DHCP 自动分配"
+                            } else {
+                                "${currentEasyTierProfile?.virtualIpv4 ?: "10.144.144.1"}/${currentEasyTierProfile?.networkLength ?: 24}"
+                            },
+                            highlight = easyTierRuntime.isRunning
                         )
                         OverviewMetricCell(
                             modifier = Modifier.weight(1f),
                             label = "网络名称 (Network)",
-                            value = "default",
+                            value = if (easyTierRuntime.isRunning) {
+                                easyTierRuntime.networkName
+                            } else {
+                                currentEasyTierProfile?.networkName?.ifBlank { "easytier" } ?: "easytier"
+                            },
                             highlight = false
                         )
                     }
@@ -677,13 +709,21 @@ fun AppSelectionScreen(
                         OverviewMetricCell(
                             modifier = Modifier.weight(1f),
                             label = "对端节点 (Peers)",
-                            value = "0 个在线对端",
+                            value = if (easyTierRuntime.isRunning) {
+                                "${easyTierRuntime.peers.size} 个连接对端"
+                            } else {
+                                currentEasyTierProfile?.networkingMethod?.label ?: "手动指定"
+                            },
                             highlight = false
                         )
                         OverviewMetricCell(
                             modifier = Modifier.weight(1f),
                             label = "双核桥接协议",
-                            value = "本地 SOCKS5 联动",
+                            value = if (currentEasyTierProfile?.socks5Enabled == true) {
+                                "SOCKS5 :${currentEasyTierProfile.socks5Port}"
+                            } else {
+                                "本地直连模式"
+                            },
                             highlight = false
                         )
                     }
