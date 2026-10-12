@@ -219,6 +219,14 @@ data class EasyTierBridgeRoutingInfo(
         get() = cidrs.map { "${it.first}/${it.second}" }
 }
 
+data class EasyTierStandaloneTunConfig(
+    val enabled: Boolean = false,
+    val localIp: String = "",
+    val prefixLength: Int = 24,
+    val mtu: Int = 1380,
+    val routes: List<Pair<String, Int>> = emptyList()
+)
+
 object EasyTierRepository {
     private const val PREFS_NAME = "easytier_profiles_prefs"
     private const val KEY_PROFILES_JSON = "profiles_json"
@@ -294,7 +302,9 @@ object EasyTierRepository {
         pollingJob = repoScope.launch {
             while (isActive && _runtimeState.value.isRunning) {
                 refreshRuntimeStatus()
-                delay(2000L)
+                val alloc = _runtimeState.value.allocatedIpv4
+                val fastPoll = alloc.isBlank() || alloc.contains("DHCP")
+                delay(if (fastPoll) 500L else 2000L)
             }
         }
     }
@@ -391,6 +401,13 @@ object EasyTierRepository {
         )
         refreshRuntimeStatus(profile)
         startStatusPolling()
+        try {
+            val intent = android.content.Intent(context, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
+                action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
+            }
+            context.startService(intent)
+        } catch (_: Throwable) {
+        }
         return Result.success(Unit)
     }
 
@@ -406,6 +423,15 @@ object EasyTierRepository {
                 runningProfileId = null,
                 eventLogs = (prevLogs + "[$timeStr] [INFO] 已停止 EasyTier 组网实例").takeLast(50)
             )
+            appContext?.let { ctx ->
+                try {
+                    val intent = android.content.Intent(ctx, top.xing2387.mihotier.core.vpn.UnifiedVpnService::class.java).apply {
+                        action = top.xing2387.mihotier.core.vpn.UnifiedVpnService.ACTION_SYNC_EASYTIER_TUN
+                    }
+                    ctx.startService(intent)
+                } catch (_: Throwable) {
+                }
+            }
             Result.success(Unit)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -618,6 +644,77 @@ object EasyTierRepository {
             socks5Port = socks5Port,
             cidrs = cidrs.toList()
         )
+    }
+
+    /**
+     * Computes the standalone Android TUN configuration for EasyTier when Mihomo is NOT running.
+     */
+    fun getStandaloneTunConfig(context: Context): EasyTierStandaloneTunConfig {
+        init(context)
+        val state = _runtimeState.value
+        if (!state.isRunning) return EasyTierStandaloneTunConfig(enabled = false)
+
+        val profile = _profiles.value.find { it.id == state.runningProfileId }
+            ?: _profiles.value.find { it.id == _selectedProfileId.value }
+            ?: _profiles.value.firstOrNull()
+
+        val defaultPrefix = profile?.networkLength ?: 24
+        val hostAndPrefix = parseHostIpAndPrefix(state.allocatedIpv4, defaultPrefix = defaultPrefix)
+            ?: if (profile != null && !profile.dhcp) {
+                parseHostIpAndPrefix("${profile.virtualIpv4}/${profile.networkLength}", defaultPrefix = defaultPrefix)
+            } else {
+                null
+            }
+            ?: return EasyTierStandaloneTunConfig(enabled = false)
+
+        val (localIp, prefixLen) = hostAndPrefix
+        val routes = LinkedHashSet<Pair<String, Int>>()
+        normalizeToNetworkCidr("$localIp/$prefixLen")?.let { routes.add(it) }
+        state.routes.forEach { route ->
+            normalizeToNetworkCidr(route.ipv4, defaultPrefix = prefixLen)?.let { routes.add(it) }
+            route.proxyCidrs.forEach { proxyCidr ->
+                normalizeToNetworkCidr(proxyCidr, defaultPrefix = 32)?.let { routes.add(it) }
+            }
+        }
+        profile?.proxyCidrs?.forEach { proxyCidr ->
+            normalizeToNetworkCidr(proxyCidr, defaultPrefix = 24)?.let { routes.add(it) }
+        }
+
+        val mtu = (profile?.mtu ?: 1380).coerceIn(1280, 9000)
+        return EasyTierStandaloneTunConfig(
+            enabled = true,
+            localIp = localIp,
+            prefixLength = prefixLen,
+            mtu = mtu,
+            routes = routes.toList()
+        )
+    }
+
+    /**
+     * Parses a host IPv4 address and prefix (e.g. "10.126.126.2/24" -> "10.126.126.2" to 24)
+     * without masking host bits.
+     */
+    fun parseHostIpAndPrefix(raw: String, defaultPrefix: Int = 24): Pair<String, Int>? {
+        val cleaned = raw.trim()
+        if (cleaned.isEmpty() || !cleaned[0].isDigit()) return null
+        val parts = cleaned.split("/")
+        val ipStr = parts[0].trim()
+        val prefix = if (parts.size > 1) {
+            parts[1].trim().toIntOrNull() ?: return null
+        } else {
+            defaultPrefix
+        }.coerceIn(1, 32)
+
+        val octets = ipStr.split(".")
+        if (octets.size != 4) return null
+        val b0 = octets[0].toIntOrNull() ?: return null
+        val b1 = octets[1].toIntOrNull() ?: return null
+        val b2 = octets[2].toIntOrNull() ?: return null
+        val b3 = octets[3].toIntOrNull() ?: return null
+        if (b0 !in 0..255 || b1 !in 0..255 || b2 !in 0..255 || b3 !in 0..255) return null
+        if (b0 == 0 || b0 == 127) return null
+
+        return "$b0.$b1.$b2.$b3" to prefix
     }
 
     /**

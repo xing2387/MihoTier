@@ -156,7 +156,12 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
     log::info!("Starting EasyTier instance with TOML:\n{}", toml_str);
 
     let parsed = match TomlConfig::new_from_str(&toml_str) {
-        Ok(cfg) => cfg,
+        Ok(cfg) => {
+            let mut flags = cfg.get_flags();
+            flags.no_tun = false;
+            cfg.set_flags(flags);
+            cfg
+        }
         Err(err) => {
             let msg = format!("{:#}", err);
             log::error!("TomlConfig parse error: {}", msg);
@@ -196,6 +201,39 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             log::error!("Failed to run_network_instance: {}", msg);
             *LAST_ERROR.lock().unwrap() = msg;
             -3
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_nativeSetTunFd<
+    'local,
+>(
+    _env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    tun_fd: jint,
+) -> jint {
+    init_logger();
+    let ctx = Lazy::force(&ENGINE_CTX);
+    let ids = ctx.manager.instance_ids();
+    let Some(instance_id) = ids.into_iter().next() else {
+        log::warn!("nativeSetTunFd({}) called, but no running instance found", tun_fd);
+        return -1;
+    };
+    match ctx.manager.attach_tun_fd(instance_id, tun_fd) {
+        Ok(()) => {
+            log::info!(
+                "Attached mobile TUN fd={} to EasyTier instance {}",
+                tun_fd,
+                instance_id
+            );
+            0
+        }
+        Err(err) => {
+            let msg = format!("{:#}", err);
+            log::error!("Failed to attach TUN fd={} to EasyTier: {}", tun_fd, msg);
+            *LAST_ERROR.lock().unwrap() = msg;
+            -2
         }
     }
 }

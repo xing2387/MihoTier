@@ -212,9 +212,16 @@ fun AppSelectionScreen(
                 }
 
                 // Tunnel status pill
+                val anyTunActive = isRunning || easyTierRuntime.isRunning
+                val tunStatusLabel = when {
+                    isRunning && easyTierRuntime.isRunning -> "双核 TUN 运行中"
+                    isRunning -> "TUN 隧道运行中"
+                    easyTierRuntime.isRunning -> "EasyTier TUN 接管"
+                    else -> "TUN 待机中"
+                }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (isRunning) Color(0xFFD1FAE5) else Color(0xFFE2E8F0)
+                    color = if (anyTunActive) Color(0xFFD1FAE5) else Color(0xFFE2E8F0)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -224,14 +231,14 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (isRunning) Color(0xFF059669) else Color(0xFF94A3B8))
+                                .background(if (anyTunActive) Color(0xFF059669) else Color(0xFF94A3B8))
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isRunning) "TUN 隧道运行中" else "TUN 待机中",
+                            text = tunStatusLabel,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isRunning) Color(0xFF065F46) else Color(0xFF475569)
+                            color = if (anyTunActive) Color(0xFF065F46) else Color(0xFF475569)
                         )
                     }
                 }
@@ -264,14 +271,14 @@ fun AppSelectionScreen(
                     ) {
                         TopologyNodeChip(
                             label = "Android TUN",
-                            active = isRunning,
+                            active = isRunning || easyTierRuntime.isRunning,
                             activeBg = Color(0xFFBAE6FD),
                             activeText = Color(0xFF0369A1)
                         )
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
                             contentDescription = null,
-                            tint = if (isRunning) Color(0xFF0369A1) else Color(0xFF94A3B8),
+                            tint = if (isRunning || easyTierRuntime.isRunning) Color(0xFF0369A1) else Color(0xFF94A3B8),
                             modifier = Modifier.size(16.dp)
                         )
                         TopologyNodeChip(

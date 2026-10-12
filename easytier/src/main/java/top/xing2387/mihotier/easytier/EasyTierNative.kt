@@ -45,6 +45,12 @@ object EasyTierNative {
     external fun nativeGetNodeStatus(): String
 
     /**
+     * Attaches (fd > 0) or detaches (fd <= 0) an Android VpnService TUN file descriptor
+     * to the running EasyTier instance.
+     */
+    external fun nativeSetTunFd(tunFd: Int): Int
+
+    /**
      * Sets the callback to protect sockets created by EasyTier.
      */
     external fun nativeSetProtectSocketCallback(callback: SocketProtectCallback)

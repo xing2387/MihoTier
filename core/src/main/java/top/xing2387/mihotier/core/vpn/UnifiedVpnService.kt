@@ -37,9 +37,14 @@ import java.util.concurrent.TimeUnit
 class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private var vpnInterface: ParcelFileDescriptor? = null
-    
+    private var easyTierVpnInterface: ParcelFileDescriptor? = null
+    private val tunMutex = kotlinx.coroutines.sync.Mutex()
+
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+    private val _isEasyTierTunActive = MutableStateFlow(false)
+    val isEasyTierTunActive: StateFlow<Boolean> = _isEasyTierTunActive.asStateFlow()
 
     data class TrafficStats(
         val upSpeed: Long = 0L,
@@ -73,6 +78,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     private var appliedEasyTierSignature: String = ""
 
     @Volatile
+    private var appliedEasyTierStandaloneSignature: String = ""
+
+    @Volatile
     private var isRestartingVpn: Boolean = false
 
     private val binder = LocalBinder()
@@ -96,6 +104,8 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                         Log.i(TAG, "EasyTier routing changed ($appliedEasyTierSignature -> $newSig), reloading VPN")
                         restartVpn()
                     }
+                } else if (!_isRunning.value && !isRestartingVpn) {
+                    syncEasyTierStandaloneTun()
                 }
             }
         }
@@ -110,6 +120,13 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             ACTION_START_VPN -> startVpn()
             ACTION_STOP_VPN -> stopVpn()
             ACTION_RESTART_VPN -> restartVpn()
+            ACTION_SYNC_EASYTIER_TUN -> {
+                serviceScope.launch {
+                    if (!_isRunning.value && !isRestartingVpn) {
+                        syncEasyTierStandaloneTun()
+                    }
+                }
+            }
         }
         return START_STICKY
     }
@@ -146,6 +163,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
         serviceScope.launch {
             try {
+                // If EasyTier was directly holding the Android TUN fd, detach and close it first
+                stopEasyTierStandaloneTun()
+
                 // 3. Start Mihomo/Sing-box Core
                 top.xing2387.mihotier.core.config.ProfileRepository.init(this@UnifiedVpnService)
                 val easyTierBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
@@ -572,6 +592,89 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
+    private suspend fun stopEasyTierStandaloneTun() {
+        tunMutex.lock()
+        try {
+            stopEasyTierStandaloneTunLocked()
+        } finally {
+            tunMutex.unlock()
+        }
+    }
+
+    private suspend fun stopEasyTierStandaloneTunLocked() {
+        if (_isEasyTierTunActive.value || easyTierVpnInterface != null) {
+            Log.i(TAG, "Stopping EasyTier Standalone TUN")
+            _isEasyTierTunActive.value = false
+            appliedEasyTierStandaloneSignature = ""
+            try {
+                EasyTierNative.nativeSetTunFd(0)
+            } catch (e: Throwable) {
+                Log.w(TAG, "nativeSetTunFd(0) error", e)
+            }
+            delay(80)
+            try {
+                easyTierVpnInterface?.close()
+            } catch (e: Exception) {
+                Log.w(TAG, "Error closing easyTierVpnInterface", e)
+            }
+            easyTierVpnInterface = null
+        }
+    }
+
+    private suspend fun syncEasyTierStandaloneTun() {
+        tunMutex.lock()
+        try {
+            if (_isRunning.value || isRestartingVpn) return
+            val cfg = EasyTierRepository.getStandaloneTunConfig(this@UnifiedVpnService)
+            if (!cfg.enabled) {
+                stopEasyTierStandaloneTunLocked()
+                return
+            }
+            val sig = "${cfg.localIp}/${cfg.prefixLength}:${cfg.mtu}:${cfg.routes.joinToString(",") { "${it.first}/${it.second}" }}"
+            if (_isEasyTierTunActive.value && easyTierVpnInterface != null && sig == appliedEasyTierStandaloneSignature) {
+                return
+            }
+            if (VpnService.prepare(this@UnifiedVpnService) != null) {
+                Log.w(TAG, "VPN permission not granted yet; waiting for user approval before establishing EasyTier Standalone TUN")
+                return
+            }
+            stopEasyTierStandaloneTunLocked()
+            try {
+                val builder = Builder()
+                    .setSession("EasyTier VPN")
+                    .setMtu(cfg.mtu)
+                    .addAddress(cfg.localIp, cfg.prefixLength)
+                for ((addr, prefix) in cfg.routes) {
+                    try {
+                        builder.addRoute(addr, prefix)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to add EasyTier standalone route $addr/$prefix", e)
+                    }
+                }
+                try {
+                    builder.addDisallowedApplication(packageName)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to disallow self package on EasyTier TUN", e)
+                }
+                val pfd = builder.establish()
+                if (pfd != null) {
+                    easyTierVpnInterface = pfd
+                    val fd = pfd.fd
+                    val res = EasyTierNative.nativeSetTunFd(fd)
+                    appliedEasyTierStandaloneSignature = sig
+                    _isEasyTierTunActive.value = true
+                    Log.i(TAG, "EasyTier Standalone TUN established: ip=${cfg.localIp}/${cfg.prefixLength}, routes=${cfg.routes}, fd=$fd, attachRes=$res")
+                } else {
+                    Log.e(TAG, "builder.establish() returned null for EasyTier Standalone TUN")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to establish EasyTier Standalone TUN", e)
+            }
+        } finally {
+            tunMutex.unlock()
+        }
+    }
+
     private fun stopVpn() {
         if (!_isRunning.value) return
         serviceScope.launch {
@@ -604,13 +707,21 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
 
         if (shouldStopSelf) {
-            stopSelf()
+            if (EasyTierRepository.runtimeState.value.isRunning) {
+                delay(200)
+                syncEasyTierStandaloneTun()
+            } else {
+                stopSelf()
+            }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         stopVpn()
+        runBlocking {
+            stopEasyTierStandaloneTun()
+        }
         cancelNotification()
         serviceScope.cancel()
     }
@@ -625,6 +736,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         const val ACTION_START_VPN = "top.xing2387.mihotier.action.START"
         const val ACTION_STOP_VPN = "top.xing2387.mihotier.action.STOP"
         const val ACTION_RESTART_VPN = "top.xing2387.mihotier.action.RESTART"
+        const val ACTION_SYNC_EASYTIER_TUN = "top.xing2387.mihotier.action.SYNC_EASYTIER_TUN"
         const val NOTIFICATION_CHANNEL_ID = "mihotier_vpn_traffic"
         const val NOTIFICATION_ID = 1001
     }

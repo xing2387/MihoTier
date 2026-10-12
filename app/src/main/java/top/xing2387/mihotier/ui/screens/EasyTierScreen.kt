@@ -87,6 +87,41 @@ fun EasyTierScreen(
 
     val isCurrentProfileRunning = runtimeState.isRunning && runtimeState.runningProfileId == currentProfile.id
 
+    fun doStartNetwork(switchToStatusTab: Boolean) {
+        val res = EasyTierRepository.startNetwork(context, currentProfile)
+        if (res.isSuccess) {
+            Toast.makeText(context, "EasyTier 组网已启动", Toast.LENGTH_SHORT).show()
+            if (switchToStatusTab) activeTab = 1
+        } else {
+            Toast.makeText(
+                context,
+                "启动失败: ${res.exceptionOrNull()?.message ?: "配置有误"}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    var pendingSwitchTabOnStart by remember { mutableStateOf(false) }
+    val vpnPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            doStartNetwork(pendingSwitchTabOnStart)
+        } else {
+            Toast.makeText(context, "未授予 VPN 权限，无法建立虚拟网卡", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun launchStartEasyTier(switchToStatusTab: Boolean) {
+        val prepareIntent = android.net.VpnService.prepare(context)
+        if (prepareIntent != null) {
+            pendingSwitchTabOnStart = switchToStatusTab
+            vpnPermissionLauncher.launch(prepareIntent)
+        } else {
+            doStartNetwork(switchToStatusTab)
+        }
+    }
+
     fun updateCurrent(transform: (EasyTierNetworkProfile) -> EasyTierNetworkProfile) {
         val updated = transform(currentProfile)
         EasyTierRepository.updateProfile(context, updated)
@@ -1342,17 +1377,7 @@ fun EasyTierScreen(
                             EasyTierRepository.stopNetwork()
                             Toast.makeText(context, "已停止 EasyTier 组网", Toast.LENGTH_SHORT).show()
                         } else {
-                            val res = EasyTierRepository.startNetwork(context, currentProfile)
-                            if (res.isSuccess) {
-                                Toast.makeText(context, "EasyTier 组网已启动", Toast.LENGTH_SHORT).show()
-                                activeTab = 1
-                            } else {
-                                Toast.makeText(
-                                    context,
-                                    "启动失败: ${res.exceptionOrNull()?.message ?: "配置有误"}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+                            launchStartEasyTier(switchToStatusTab = true)
                         }
                     },
                     modifier = Modifier
@@ -1387,16 +1412,7 @@ fun EasyTierScreen(
                     runtimeState = runtimeState,
                     currentProfile = currentProfile,
                     onStartNetwork = {
-                        val res = EasyTierRepository.startNetwork(context, currentProfile)
-                        if (res.isSuccess) {
-                            Toast.makeText(context, "EasyTier 组网已启动", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(
-                                context,
-                                "启动失败: ${res.exceptionOrNull()?.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                        launchStartEasyTier(switchToStatusTab = false)
                     },
                     onStopNetwork = {
                         EasyTierRepository.stopNetwork()
