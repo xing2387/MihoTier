@@ -261,29 +261,57 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 }
 
                 // Access Control (Per-app proxy)
-                builder.addDisallowedApplication(packageName) // always exclude self
+                // Note: Android VpnService.Builder does NOT allow mixing addDisallowedApplication()
+                // and addAllowedApplication() on the same Builder instance.
                 when (netSettings.accessControlMode) {
                     "Disallow selected apps" -> {
+                        builder.addDisallowedApplication(packageName)
+                        var count = 0
                         for (pkg in netSettings.accessControlPackages) {
                             if (pkg != packageName) {
                                 try {
                                     builder.addDisallowedApplication(pkg)
+                                    count++
                                 } catch (e: Exception) {
                                     Log.w(TAG, "Cannot disallow $pkg", e)
                                 }
                             }
                         }
+                        Log.i(TAG, "Access control: Disallow mode active ($count apps bypassed)")
                     }
                     "Allow selected apps" -> {
+                        // In Allow mode, any app NOT added via addAllowedApplication (including self packageName)
+                        // automatically bypasses the VPN.
+                        var allowedCount = 0
                         for (pkg in netSettings.accessControlPackages) {
                             if (pkg != packageName) {
                                 try {
                                     builder.addAllowedApplication(pkg)
+                                    allowedCount++
                                 } catch (e: Exception) {
                                     Log.w(TAG, "Cannot allow $pkg", e)
                                 }
                             }
                         }
+                        if (allowedCount == 0) {
+                            // Empty whitelist: disallow all installed apps so no app is routed through VPN
+                            try {
+                                for (pkgInfo in packageManager.getInstalledPackages(0)) {
+                                    try {
+                                        builder.addDisallowedApplication(pkgInfo.packageName)
+                                    } catch (_: Exception) {
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                builder.addDisallowedApplication(packageName)
+                            }
+                        }
+                        Log.i(TAG, "Access control: Allow (whitelist) mode active ($allowedCount apps allowed)")
+                    }
+                    else -> {
+                        // "Allow all apps"
+                        builder.addDisallowedApplication(packageName)
+                        Log.i(TAG, "Access control: Allow all apps (self excluded)")
                     }
                 }
 

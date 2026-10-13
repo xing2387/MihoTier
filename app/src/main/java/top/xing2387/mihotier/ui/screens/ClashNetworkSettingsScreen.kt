@@ -330,7 +330,13 @@ fun ClashNetworkSettingsScreen(
                         iconTint = Color(0xFF9A3412),
                         title = "分应用代理列表 (Access Control Packages)",
                         subtitle = if (pkgCount == 0) "配置允许或绕过代理的应用程序" else "已选择 $pkgCount 个应用",
-                        onClick = onNavigateToAppSelection
+                        onClick = {
+                            if (currentSettings != savedSettings) {
+                                NetworkSettingsRepository.save(context, currentSettings)
+                                savedSettings = currentSettings
+                            }
+                            onNavigateToAppSelection()
+                        }
                     )
                 }
             }
