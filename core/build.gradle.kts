@@ -26,7 +26,3 @@ dependencies {
     implementation(libs.okhttp)
     // Dependencies for config parsing/generation, e.g. JSON/YAML if needed later
 }
-
-tasks.matching { it.name.contains("extract") && it.name.contains("Annotations") }.configureEach {
-    enabled = false
-}

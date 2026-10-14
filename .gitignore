@@ -27,3 +27,5 @@ local.properties
 /mihomo-mobile/*-sources.jar
 /core/libs/*.aar
 /core/libs/*-sources.jar
+/release.jks
+/app/release/
