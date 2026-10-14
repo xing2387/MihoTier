@@ -9,6 +9,7 @@
 .externalNativeBuild/
 .cxx/
 .kotlin/
+docs/ignore/
 local.properties
 
 # Android Studio / IntelliJ IDEA

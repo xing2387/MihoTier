@@ -811,7 +811,7 @@ fun ClashMainScreen(
                         icon = Icons.Default.Lan,
                         iconBgColor = Color(0xFFDBEAFE), // Soft blue
                         iconTintColor = Color(0xFF1D4ED8),
-                        title = "连接中 (Connections)",
+                        title = "连接 (Connections)",
                         subtitle = "查看活动与历史连接详情",
                         onClick = onNavigateToConnections
                     )
