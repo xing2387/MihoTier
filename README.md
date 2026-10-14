@@ -2,7 +2,7 @@
 
 **MihoTier** 是一款面向 Android 平台的高性能融合网络工具，将 **[Mihomo (Clash Meta)](https://github.com/MetaCubeX/mihomo)** 代理核心与 **[EasyTier](https://github.com/EasyTier/EasyTier)** P2P 虚拟组网核心深度整合于同一 Android 应用中。通过单一 `UnifiedVpnService`，彻底打破 Android 系统同时仅允许开启一个 VPN 的限制，实现科学分流与异地内网互联无缝共存。
 
-###### **代码是AI写的**
+###### **代码和这篇东西通统是AI写的**
 
 ---
 
