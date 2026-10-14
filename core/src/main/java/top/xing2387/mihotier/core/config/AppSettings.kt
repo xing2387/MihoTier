@@ -46,4 +46,19 @@ object BandwidthFormatter {
             else -> String.format(Locale.US, "%.2f GB/s", b / gb)
         }
     }
+
+    fun formatTotalBytes(bytes: Long): String {
+        if (bytes <= 0L) return "0 B"
+        val kb = 1024.0
+        val mb = 1024.0 * 1024.0
+        val gb = 1024.0 * 1024.0 * 1024.0
+
+        val b = bytes.toDouble()
+        return when {
+            bytes < 1024L -> "$bytes B"
+            b < mb -> String.format(Locale.US, "%.1f KB", b / kb)
+            b < gb -> String.format(Locale.US, "%.1f MB", b / mb)
+            else -> String.format(Locale.US, "%.2f GB", b / gb)
+        }
+    }
 }

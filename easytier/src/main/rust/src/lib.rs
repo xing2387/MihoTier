@@ -333,12 +333,14 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
     let mut seen_peer_ids = HashSet::new();
     let mut peer_list = Vec::new();
     let mut route_list = Vec::new();
+    let mut total_rx_bytes: u64 = 0;
+    let mut total_tx_bytes: u64 = 0;
 
     for pair in &info.peer_route_pairs {
         let Some(route) = &pair.route else {
             continue;
         };
-        seen_peer_ids.insert(route.peer_id);
+        let is_new_peer = seen_peer_ids.insert(route.peer_id);
 
         let peer_ipv4 = format_proto_ipv4_only(route.ipv4_addr);
         let is_public_server = route
@@ -369,8 +371,14 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             .map(|r| format!("{:.1}%", r * 100.0))
             .unwrap_or_else(|| "0.0%".to_string());
 
-        let rx_bytes = format_bytes(pair.get_rx_bytes().unwrap_or(0));
-        let tx_bytes = format_bytes(pair.get_tx_bytes().unwrap_or(0));
+        let rx_raw = pair.get_rx_bytes().unwrap_or(0);
+        let tx_raw = pair.get_tx_bytes().unwrap_or(0);
+        if is_new_peer {
+            total_rx_bytes = total_rx_bytes.saturating_add(rx_raw);
+            total_tx_bytes = total_tx_bytes.saturating_add(tx_raw);
+        }
+        let rx_bytes = format_bytes(rx_raw);
+        let tx_bytes = format_bytes(tx_raw);
         let peer_nat = pair.get_udp_nat_type();
 
         peer_list.push(json!({
@@ -387,6 +395,8 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             "loss_rate": loss_rate,
             "rx_bytes": rx_bytes,
             "tx_bytes": tx_bytes,
+            "rx_bytes_raw": rx_raw,
+            "tx_bytes_raw": tx_raw,
             "cost": route.cost,
             "is_relay": is_relayed || is_public_server,
             "version": route.version,
@@ -404,7 +414,7 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
 
     // Also include any directly connected peers not yet in OSPF routes
     for peer in &info.peers {
-        if seen_peer_ids.contains(&peer.peer_id) || peer.peer_id == my_peer_id {
+        if !seen_peer_ids.insert(peer.peer_id) || peer.peer_id == my_peer_id {
             continue;
         }
         let mut protos = Vec::new();
@@ -432,6 +442,9 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             }
         }
 
+        total_rx_bytes = total_rx_bytes.saturating_add(rx_total);
+        total_tx_bytes = total_tx_bytes.saturating_add(tx_total);
+
         let lat_ms = if min_lat_us == u64::MAX {
             0
         } else {
@@ -452,6 +465,8 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             "loss_rate": "0.0%",
             "rx_bytes": format_bytes(rx_total),
             "tx_bytes": format_bytes(tx_total),
+            "rx_bytes_raw": rx_total,
+            "tx_bytes_raw": tx_total,
             "cost": 1,
             "is_relay": false,
             "version": "",
@@ -469,6 +484,8 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
         "socks5_portal": socks5_portal,
         "nat_type": nat_type_str,
         "uptime_sec": uptime_sec,
+        "total_rx_bytes": total_rx_bytes,
+        "total_tx_bytes": total_tx_bytes,
         "error_msg": info.error_msg.unwrap_or_default(),
         "peers": peer_list,
         "routes": route_list,

@@ -207,6 +207,10 @@ data class EasyTierRuntimeState(
     val socks5Portal: String = "",
     val natType: String = "Unknown",
     val uptimeSec: Long = 0L,
+    val rxSpeed: Long = 0L,
+    val txSpeed: Long = 0L,
+    val rxTotalBytes: Long = 0L,
+    val txTotalBytes: Long = 0L,
     val peers: List<EasyTierPeerNodeInfo> = emptyList(),
     val routes: List<EasyTierRouteItem> = emptyList(),
     val eventLogs: List<String> = emptyList(),
@@ -263,6 +267,13 @@ object EasyTierRepository {
     private val repoScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var pollingJob: Job? = null
     private var initialized = false
+
+    @Volatile
+    private var lastTrafficSampleTimeMs: Long = 0L
+    @Volatile
+    private var lastRxTotalBytes: Long = 0L
+    @Volatile
+    private var lastTxTotalBytes: Long = 0L
 
     fun init(context: Context) {
         appContext = context.applicationContext
@@ -345,7 +356,7 @@ object EasyTierRepository {
                 refreshRuntimeStatus()
                 val alloc = _runtimeState.value.allocatedIpv4
                 val fastPoll = alloc.isBlank() || alloc.contains("DHCP")
-                delay(if (fastPoll) 500L else 2000L)
+                delay(if (fastPoll) 500L else 1000L)
             }
         }
     }
@@ -436,10 +447,17 @@ object EasyTierRepository {
             return Result.failure(IllegalStateException(err))
         }
 
+        lastTrafficSampleTimeMs = 0L
+        lastRxTotalBytes = 0L
+        lastTxTotalBytes = 0L
         _runtimeState.value = _runtimeState.value.copy(
             isRunning = true,
             runningProfileId = profile.id,
-            runningProfileName = profile.instanceName
+            runningProfileName = profile.instanceName,
+            rxSpeed = 0L,
+            txSpeed = 0L,
+            rxTotalBytes = 0L,
+            txTotalBytes = 0L
         )
         refreshRuntimeStatus(profile)
         startStatusPolling()
@@ -457,6 +475,9 @@ object EasyTierRepository {
         return try {
             pollingJob?.cancel()
             pollingJob = null
+            lastTrafficSampleTimeMs = 0L
+            lastRxTotalBytes = 0L
+            lastTxTotalBytes = 0L
             EasyTierNative.nativeStopEasyTier()
             val timeStr = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val prevLogs = _runtimeState.value.eventLogs
@@ -486,10 +507,17 @@ object EasyTierRepository {
             val json = JSONObject(statusJsonStr)
             val running = json.optBoolean("running", false)
             if (!running) {
+                lastTrafficSampleTimeMs = 0L
+                lastRxTotalBytes = 0L
+                lastTxTotalBytes = 0L
                 val err = json.optString("error_msg", "")
                 _runtimeState.value = _runtimeState.value.copy(
                     isRunning = false,
                     runningProfileId = null,
+                    rxSpeed = 0L,
+                    txSpeed = 0L,
+                    rxTotalBytes = 0L,
+                    txTotalBytes = 0L,
                     lastError = err.ifBlank { _runtimeState.value.lastError }
                 )
                 return
@@ -520,7 +548,30 @@ object EasyTierRepository {
             }
             val natType = json.optString("nat_type", "Unknown")
             val uptimeSec = json.optLong("uptime_sec", 0L)
+            val totalRxBytes = json.optLong("total_rx_bytes", 0L).coerceAtLeast(0L)
+            val totalTxBytes = json.optLong("total_tx_bytes", 0L).coerceAtLeast(0L)
             val errorMsg = json.optString("error_msg", "")
+
+            val nowMs = System.currentTimeMillis()
+            val prevSampleMs = lastTrafficSampleTimeMs
+            val elapsedMs = nowMs - prevSampleMs
+            val (rxSpeed, txSpeed) = if (prevSampleMs <= 0L) {
+                lastTrafficSampleTimeMs = nowMs
+                lastRxTotalBytes = totalRxBytes
+                lastTxTotalBytes = totalTxBytes
+                0L to 0L
+            } else if (elapsedMs >= 400L) {
+                val rDiff = (totalRxBytes - lastRxTotalBytes).coerceAtLeast(0L)
+                val tDiff = (totalTxBytes - lastTxTotalBytes).coerceAtLeast(0L)
+                val rSpd = rDiff * 1000L / elapsedMs
+                val tSpd = tDiff * 1000L / elapsedMs
+                lastTrafficSampleTimeMs = nowMs
+                lastRxTotalBytes = totalRxBytes
+                lastTxTotalBytes = totalTxBytes
+                rSpd to tSpd
+            } else {
+                _runtimeState.value.rxSpeed to _runtimeState.value.txSpeed
+            }
 
             val peersArray = json.optJSONArray("peers") ?: JSONArray()
             val peerNodes = mutableListOf<EasyTierPeerNodeInfo>()
@@ -615,6 +666,10 @@ object EasyTierRepository {
                 socks5Portal = socks5Portal,
                 natType = natType,
                 uptimeSec = uptimeSec,
+                rxSpeed = rxSpeed,
+                txSpeed = txSpeed,
+                rxTotalBytes = totalRxBytes,
+                txTotalBytes = totalTxBytes,
                 peers = peerNodes,
                 routes = routeItems,
                 eventLogs = logs.takeLast(40),

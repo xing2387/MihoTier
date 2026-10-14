@@ -26,6 +26,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -103,6 +104,7 @@ fun ClashMainScreen(
     onNavigateToProxy: () -> Unit = {},
     onNavigateToProfiles: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onNavigateToConnections: () -> Unit = {},
     onNavigateToLogs: () -> Unit = {},
     isRunning: Boolean = false,
     trafficStats: UnifiedVpnService.TrafficStats = UnifiedVpnService.TrafficStats(),
@@ -805,6 +807,15 @@ fun ClashMainScreen(
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
                 ) {
+                    HomeMenuItem(
+                        icon = Icons.Default.Lan,
+                        iconBgColor = Color(0xFFDBEAFE), // Soft blue
+                        iconTintColor = Color(0xFF1D4ED8),
+                        title = "连接中 (Connections)",
+                        subtitle = "查看活动与历史连接详情",
+                        onClick = onNavigateToConnections
+                    )
+
                     HomeMenuItem(
                         icon = Icons.Default.Terminal,
                         iconBgColor = Color(0xFFA7F3D0), // Light mint green

@@ -249,10 +249,26 @@ fun AppSelectionScreen(
         }
     }
 
-    val upSpeedBytes = if (isRunning) trafficStats.upSpeed else 0L
-    val downSpeedBytes = if (isRunning) trafficStats.downSpeed else 0L
-    val totalUpBytes = if (isRunning) trafficStats.upTotal else 0L
-    val totalDownBytes = if (isRunning) trafficStats.downTotal else 0L
+    val upSpeedBytes = when {
+        isRunning -> trafficStats.upSpeed
+        easyTierRuntime.isRunning -> easyTierRuntime.txSpeed
+        else -> 0L
+    }
+    val downSpeedBytes = when {
+        isRunning -> trafficStats.downSpeed
+        easyTierRuntime.isRunning -> easyTierRuntime.rxSpeed
+        else -> 0L
+    }
+    val totalUpBytes = when {
+        isRunning -> trafficStats.upTotal
+        easyTierRuntime.isRunning -> easyTierRuntime.txTotalBytes
+        else -> 0L
+    }
+    val totalDownBytes = when {
+        isRunning -> trafficStats.downTotal
+        easyTierRuntime.isRunning -> easyTierRuntime.rxTotalBytes
+        else -> 0L
+    }
 
     Scaffold(
         containerColor = Color(0xFFEEF3F8)
@@ -861,13 +877,15 @@ fun AppSelectionScreen(
                         )
                         OverviewMetricCell(
                             modifier = Modifier.weight(1f),
-                            label = "双核桥接协议",
-                            value = if (currentEasyTierProfile?.socks5Enabled == true) {
+                            label = if (easyTierRuntime.isRunning) "组网实时速率" else "双核桥接协议",
+                            value = if (easyTierRuntime.isRunning) {
+                                "↓ ${formatSpeed(easyTierRuntime.rxSpeed)} ↑ ${formatSpeed(easyTierRuntime.txSpeed)}"
+                            } else if (currentEasyTierProfile?.socks5Enabled == true) {
                                 "SOCKS5 :${currentEasyTierProfile.socks5Port}"
                             } else {
                                 "本地直连模式"
                             },
-                            highlight = false
+                            highlight = easyTierRuntime.isRunning && (easyTierRuntime.rxSpeed > 0L || easyTierRuntime.txSpeed > 0L)
                         )
                     }
 

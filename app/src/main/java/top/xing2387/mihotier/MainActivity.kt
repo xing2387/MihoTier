@@ -26,6 +26,7 @@ import mobile.Mobile
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.screens.AppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashAppSelectionScreen
+import top.xing2387.mihotier.ui.screens.ClashConnectionsScreen
 import top.xing2387.mihotier.ui.screens.ClashLogsScreen
 import top.xing2387.mihotier.ui.screens.ClashMainScreen
 import top.xing2387.mihotier.ui.screens.ClashMetaFeaturesScreen
@@ -145,11 +146,19 @@ class MainActivity : ComponentActivity() {
                             onNavigateToProxy = { navController.navigate("clash_proxy") },
                             onNavigateToProfiles = { navController.navigate("clash_profiles") },
                             onNavigateToSettings = { navController.navigate("clash_settings") },
+                            onNavigateToConnections = { navController.navigate("clash_connections") },
                             onNavigateToLogs = { navController.navigate("clash_logs") },
                             isRunning = isRunning,
                             trafficStats = stats,
                             onToggleVpn = { toggleVpn() },
                             onRestartVpn = { vpnService?.restartVpn() }
+                        )
+                    }
+                    composable("clash_connections") {
+                        val isRunning by isVpnRunning.collectAsState()
+                        ClashConnectionsScreen(
+                            isRunning = isRunning,
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
                     composable("clash_logs") {

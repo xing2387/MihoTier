@@ -1877,6 +1877,24 @@ private fun EasyTierRunningTab(
                         value = if (runtimeState.isRunning) runtimeState.natType else "待检测"
                     )
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    StatusMetricTile(
+                        modifier = Modifier.weight(1f),
+                        label = "实时下行 (累计 ${top.xing2387.mihotier.core.config.BandwidthFormatter.formatTotalBytes(runtimeState.rxTotalBytes)})",
+                        value = "↓ ${top.xing2387.mihotier.core.config.BandwidthFormatter.formatAdaptive(runtimeState.rxSpeed)}",
+                        highlight = runtimeState.isRunning && runtimeState.rxSpeed > 0L
+                    )
+                    StatusMetricTile(
+                        modifier = Modifier.weight(1f),
+                        label = "实时上行 (累计 ${top.xing2387.mihotier.core.config.BandwidthFormatter.formatTotalBytes(runtimeState.txTotalBytes)})",
+                        value = "↑ ${top.xing2387.mihotier.core.config.BandwidthFormatter.formatAdaptive(runtimeState.txSpeed)}",
+                        highlight = runtimeState.isRunning && runtimeState.txSpeed > 0L
+                    )
+                }
             }
         }
 

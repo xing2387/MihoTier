@@ -65,6 +65,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         val downSpeed: Long = 0L,
         val upTotal: Long = 0L,
         val downTotal: Long = 0L,
+        val easyTierUpSpeed: Long = 0L,
+        val easyTierDownSpeed: Long = 0L,
+        val easyTierUpTotal: Long = 0L,
+        val easyTierDownTotal: Long = 0L,
         val tick: Long = 0L
     )
 
@@ -110,7 +114,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         Log.i(TAG, "UnifiedVpnService created")
         EasyTierRepository.init(this)
         serviceScope.launch {
-            EasyTierRepository.runtimeState.collect {
+            EasyTierRepository.runtimeState.collect { etState ->
                 if (_isRunning.value && !isRestartingVpn) {
                     val info = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
                     val newSig = "${info.enabled}:${info.socks5Port}:${info.cidrStrings.sorted().joinToString(",")}"
@@ -120,6 +124,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                     }
                 } else if (!_isRunning.value && !isRestartingVpn) {
                     syncEasyTierStandaloneTun()
+                }
+                if (_isRunning.value || etState.isRunning) {
+                    ensureTrafficPollingStarted()
+                } else if (!isRestartingVpn) {
+                    stopTrafficPollingAndNotification()
                 }
             }
         }
@@ -138,6 +147,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                 serviceScope.launch {
                     if (!_isRunning.value && !isRestartingVpn) {
                         syncEasyTierStandaloneTun()
+                    }
+                    if (_isRunning.value || EasyTierRepository.runtimeState.value.isRunning) {
+                        ensureTrafficPollingStarted()
+                    } else if (!isRestartingVpn) {
+                        stopTrafficPollingAndNotification()
                     }
                 }
             }
@@ -346,13 +360,13 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
                 // 4. Start Foreground Notification (if enabled in settings)
                 if (AppSettingsRepository.isShowSpeedNotification(this@UnifiedVpnService)) {
-                    updateNotification(0L, 0L)
+                    updateNotification(_trafficStats.value)
                 } else {
                     cancelNotification()
                 }
 
                 // 5. Start Traffic Polling
-                startTrafficPolling()
+                ensureTrafficPollingStarted()
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
@@ -501,17 +515,26 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
-    private fun startTrafficPolling() {
-        trafficPollingJob?.cancel()
+    private fun ensureTrafficPollingStarted() {
+        if (trafficPollingJob?.isActive == true) return
         trafficPollingJob = serviceScope.launch {
             var tick = 0L
-            while (isActive && _isRunning.value) {
-                val upSpeed = Mobile.queryTrafficNowUp()
-                val downSpeed = Mobile.queryTrafficNowDown()
-                val upTotal = Mobile.queryTrafficUp()
-                val downTotal = Mobile.queryTrafficDown()
+            while (isActive && (_isRunning.value || EasyTierRepository.runtimeState.value.isRunning)) {
+                val clashRunning = _isRunning.value
+                val upSpeed = if (clashRunning) Mobile.queryTrafficNowUp() else 0L
+                val downSpeed = if (clashRunning) Mobile.queryTrafficNowDown() else 0L
+                val upTotal = if (clashRunning) Mobile.queryTrafficUp() else 0L
+                val downTotal = if (clashRunning) Mobile.queryTrafficDown() else 0L
+
+                val etState = EasyTierRepository.runtimeState.value
+                val etRunning = etState.isRunning
+                val etUpSpeed = if (etRunning) etState.txSpeed else 0L
+                val etDownSpeed = if (etRunning) etState.rxSpeed else 0L
+                val etUpTotal = if (etRunning) etState.txTotalBytes else 0L
+                val etDownTotal = if (etRunning) etState.rxTotalBytes else 0L
+
                 tick++
-                if (tick % 2 == 1L) {
+                if (clashRunning && tick % 2 == 1L) {
                     try {
                         val req = Request.Builder().url("http://127.0.0.1:9090/configs").get().build()
                         httpClient.newCall(req).execute().use { res ->
@@ -540,21 +563,36 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                         // ignore API error
                     }
                 }
-                _trafficStats.value = TrafficStats(
+                val stats = TrafficStats(
                     upSpeed = upSpeed,
                     downSpeed = downSpeed,
                     upTotal = upTotal,
                     downTotal = downTotal,
+                    easyTierUpSpeed = etUpSpeed,
+                    easyTierDownSpeed = etDownSpeed,
+                    easyTierUpTotal = etUpTotal,
+                    easyTierDownTotal = etDownTotal,
                     tick = tick
                 )
+                _trafficStats.value = stats
                 if (AppSettingsRepository.isShowSpeedNotification(this@UnifiedVpnService)) {
-                    updateNotification(upSpeed, downSpeed)
+                    updateNotification(stats)
                 } else {
                     cancelNotification()
                 }
                 delay(1000)
             }
+            if (!_isRunning.value && !EasyTierRepository.runtimeState.value.isRunning && !isRestartingVpn) {
+                stopTrafficPollingAndNotification()
+            }
         }
+    }
+
+    private fun stopTrafficPollingAndNotification() {
+        trafficPollingJob?.cancel()
+        trafficPollingJob = null
+        _trafficStats.value = TrafficStats()
+        cancelNotification()
     }
 
     private fun createNotificationChannel() {
@@ -571,12 +609,56 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
-    private fun buildNotification(upSpeed: Long = 0L, downSpeed: Long = 0L): Notification {
-        val contentText = "↓ ${BandwidthFormatter.formatAdaptive(downSpeed)}   ↑ ${BandwidthFormatter.formatAdaptive(upSpeed)}"
+    private fun buildNotification(stats: TrafficStats): Notification {
+        val clashRunning = _isRunning.value
+        val etState = EasyTierRepository.runtimeState.value
+        val etRunning = etState.isRunning
 
         val activeProfile = ProfileRepository.getActiveProfile() ?: ProfileRepository.profiles.value.firstOrNull()
         val profileName = activeProfile?.name?.ifBlank { null } ?: "默认配置"
-        val titleText = "$profileName($currentModeName)"
+
+        val etRawIp = etState.allocatedIpv4.substringBefore("/").trim()
+        val etIpDisplay = when {
+            etRawIp.isNotEmpty() && etRawIp[0].isDigit() -> etRawIp
+            etState.allocatedIpv4.contains("DHCP") -> "DHCP中"
+            else -> etState.networkName.ifBlank { "组网中" }
+        }
+
+        val clashDownStr = BandwidthFormatter.formatAdaptive(stats.downSpeed)
+        val clashUpStr = BandwidthFormatter.formatAdaptive(stats.upSpeed)
+        val clashDownTotalStr = BandwidthFormatter.formatTotalBytes(stats.downTotal)
+        val clashUpTotalStr = BandwidthFormatter.formatTotalBytes(stats.upTotal)
+
+        val etDownStr = BandwidthFormatter.formatAdaptive(stats.easyTierDownSpeed)
+        val etUpStr = BandwidthFormatter.formatAdaptive(stats.easyTierUpSpeed)
+        val etDownTotalStr = BandwidthFormatter.formatTotalBytes(stats.easyTierDownTotal)
+        val etUpTotalStr = BandwidthFormatter.formatTotalBytes(stats.easyTierUpTotal)
+
+        val titleText: String
+        val contentText: String
+        val bigText: String
+
+        when {
+            clashRunning && etRunning -> {
+                titleText = "Mihomo($profileName) + EasyTier($etIpDisplay)"
+                contentText = "Clash ↓$clashDownStr ↑$clashUpStr  |  ET ↓$etDownStr ↑$etUpStr"
+                bigText = "Mihomo [$profileName·$currentModeName]: ↓ $clashDownStr   ↑ $clashUpStr (累计 ↓$clashDownTotalStr ↑$clashUpTotalStr)\n" +
+                    "EasyTier [$etIpDisplay·${etState.peers.size}节点]: ↓ $etDownStr   ↑ $etUpStr (累计 ↓$etDownTotalStr ↑$etUpTotalStr)"
+            }
+            !clashRunning && etRunning -> {
+                val netName = etState.networkName.ifBlank { "easytier" }
+                titleText = "EasyTier · $netName ($etIpDisplay)"
+                contentText = "↓ $etDownStr   ↑ $etUpStr   ·   ${etState.peers.size} 节点"
+                bigText = "实时网速: ↓ $etDownStr   ↑ $etUpStr\n" +
+                    "累计流量: ↓ $etDownTotalStr   ↑ $etUpTotalStr   ·   在线节点: ${etState.peers.size}"
+            }
+            else -> {
+                titleText = "Mihomo · $profileName ($currentModeName)"
+                contentText = "↓ $clashDownStr   ↑ $clashUpStr"
+                bigText = "实时网速: ↓ $clashDownStr   ↑ $clashUpStr\n" +
+                    "累计流量: ↓ $clashDownTotalStr   ↑ $clashUpTotalStr"
+            }
+        }
 
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         val pendingIntent = if (launchIntent != null) {
@@ -592,6 +674,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             .setSmallIcon(R.drawable.ic_stat_mihotier)
             .setContentTitle(titleText)
             .setContentText(contentText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
@@ -600,10 +683,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             .build()
     }
 
-    private fun updateNotification(upSpeed: Long, downSpeed: Long) {
+    private fun updateNotification(stats: TrafficStats) {
         try {
             createNotificationChannel()
-            val notification = buildNotification(upSpeed, downSpeed)
+            val notification = buildNotification(stats)
             if (!isForegroundActive) {
                 try {
                     startForeground(NOTIFICATION_ID, notification)
@@ -728,11 +811,6 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         if (!_isRunning.value) return
         _isRunning.value = false
 
-        trafficPollingJob?.cancel()
-        trafficPollingJob = null
-        _trafficStats.value = TrafficStats()
-        cancelNotification()
-
         try {
             // Stop Mihomo - Mobile.stop() will also close the fd on the Go side,
             // since we transferred ownership via detachFd().
@@ -751,7 +829,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         if (shouldStopSelf) {
             if (EasyTierRepository.runtimeState.value.isRunning) {
                 syncEasyTierStandaloneTun()
+                ensureTrafficPollingStarted()
             } else {
+                stopTrafficPollingAndNotification()
                 stopSelf()
             }
         }
