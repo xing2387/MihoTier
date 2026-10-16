@@ -625,13 +625,14 @@ object ConfigManager {
             try {
                 val request = Request.Builder()
                     .url(urlString)
-                    .header("User-Agent", "Mihotier/1.0")
+                    .header("User-Agent", "clash.meta; Mihotier/1.0")
                     .build()
 
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
                         val configText = response.body?.string() ?: ""
-                        saveConfigText(context, configText, profileId)
+                        val processedYaml = SubscriptionParser.parseOrConvert(configText)
+                        saveConfigText(context, processedYaml, profileId)
                         Result.success(Unit)
                     } else {
                         Result.failure(Exception("HTTP Error: ${response.code}"))
@@ -652,7 +653,8 @@ object ConfigManager {
                 val inputStream = context.contentResolver.openInputStream(uri)
                 if (inputStream != null) {
                     val configText = inputStream.bufferedReader().use { it.readText() }
-                    saveConfigText(context, configText, profileId)
+                    val processedYaml = SubscriptionParser.parseOrConvert(configText)
+                    saveConfigText(context, processedYaml, profileId)
                     Result.success(Unit)
                 } else {
                     Result.failure(Exception("Unable to open file URI"))

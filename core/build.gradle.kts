@@ -24,5 +24,5 @@ dependencies {
     implementation(project(":easytier"))
     api(files("libs/mihomo.aar"))
     implementation(libs.okhttp)
-    // Dependencies for config parsing/generation, e.g. JSON/YAML if needed later
+    testImplementation(libs.junit)
 }
