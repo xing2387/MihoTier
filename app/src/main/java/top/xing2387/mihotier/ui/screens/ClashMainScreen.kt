@@ -94,6 +94,7 @@ import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
+import top.xing2387.mihotier.ui.theme.AppTheme
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -113,6 +114,7 @@ fun ClashMainScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val colors = AppTheme.colors
 
     // 1. Sensible defaults & active profile state
     val profiles by ProfileRepository.profiles.collectAsState()
@@ -394,11 +396,8 @@ fun ClashMainScreen(
         }
     }
 
-    // Page background
-    val pageBgColor = Color(0xFFEEF3F8)
-
     Scaffold(
-        containerColor = pageBgColor
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -422,12 +421,12 @@ fun ClashMainScreen(
                         text = "Clash Meta",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                     Text(
                         text = "for Android",
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B),
+                        color = AppTheme.colors.textSecondary,
                         fontWeight = FontWeight.Normal
                     )
                 }
@@ -447,7 +446,7 @@ fun ClashMainScreen(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_bolt),
                             contentDescription = "Speed Test",
-                            tint = Color(0xFF0F172A),
+                            tint = AppTheme.colors.textPrimary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -467,7 +466,7 @@ fun ClashMainScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Restart",
-                            tint = Color(0xFF0F172A),
+                            tint = colors.textPrimary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -587,8 +586,8 @@ fun ClashMainScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            val disabledCardBg = Color(0xFFE2E8F0)
-            val enabledCardBg = Color.White
+            val disabledCardBg = AppTheme.colors.surfaceSubtle
+            val enabledCardBg = AppTheme.colors.cardBackground
 
             val isModeClickable = isRunning
             val isNodeClickable = isRunning
@@ -611,7 +610,8 @@ fun ClashMainScreen(
                             }
                         },
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isModeClickable) enabledCardBg else disabledCardBg)
+                    colors = CardDefaults.cardColors(containerColor = if (isModeClickable) enabledCardBg else disabledCardBg),
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Row(
                         modifier = Modifier
@@ -622,7 +622,7 @@ fun ClashMainScreen(
                         Icon(
                             imageVector = Icons.Default.Shuffle,
                             contentDescription = "Proxy Mode",
-                            tint = if (isModeClickable) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                            tint = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
                             modifier = Modifier.size(26.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -631,13 +631,13 @@ fun ClashMainScreen(
                                 text = "代理模式",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isModeClickable) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                                color = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
                             )
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = proxyModeText,
                                 fontSize = 13.sp,
-                                color = if (isModeClickable) Color(0xFF64748B) else Color(0xFF94A3B8)
+                                color = if (isModeClickable) AppTheme.colors.textSecondary else AppTheme.colors.textMuted
                             )
                         }
                     }
@@ -656,7 +656,8 @@ fun ClashMainScreen(
                             }
                         },
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isNodeClickable) enabledCardBg else disabledCardBg)
+                    colors = CardDefaults.cardColors(containerColor = if (isNodeClickable) enabledCardBg else disabledCardBg),
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Column(
                         modifier = Modifier
@@ -668,7 +669,7 @@ fun ClashMainScreen(
                             Icon(
                                 imageVector = Icons.Default.Public,
                                 contentDescription = "Node",
-                                tint = if (isNodeClickable) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                tint = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
                                 modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -676,7 +677,7 @@ fun ClashMainScreen(
                                 text = "当前节点",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isNodeClickable) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                                color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
                             )
                         }
                         Spacer(modifier = Modifier.height(3.dp))
@@ -684,7 +685,7 @@ fun ClashMainScreen(
                             text = currentNodeName,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isNodeClickable) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                            color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -696,10 +697,10 @@ fun ClashMainScreen(
                                     .clip(CircleShape)
                                     .background(
                                         when {
-                                            !isNodeClickable -> Color(0xFF94A3B8)
+                                            !isNodeClickable -> AppTheme.colors.textMuted
                                             currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
                                             isTestingLatency -> Color(0xFF38BDF8)
-                                            else -> Color(0xFF94A3B8)
+                                            else -> AppTheme.colors.textMuted
                                         }
                                     )
                             )
@@ -713,10 +714,10 @@ fun ClashMainScreen(
                                 },
                                 fontSize = 12.sp,
                                 color = when {
-                                    !isNodeClickable -> Color(0xFF94A3B8)
+                                    !isNodeClickable -> AppTheme.colors.textMuted
                                     currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
                                     isTestingLatency -> Color(0xFF38BDF8)
-                                    else -> Color(0xFF64748B)
+                                    else -> AppTheme.colors.textSecondary
                                 }
                             )
                         }
@@ -732,7 +733,8 @@ fun ClashMainScreen(
                     .fillMaxWidth()
                     .clickable { onNavigateToProfiles() },
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = enabledCardBg)
+                colors = CardDefaults.cardColors(containerColor = enabledCardBg),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
             ) {
                 Row(
                     modifier = Modifier
@@ -743,7 +745,7 @@ fun ClashMainScreen(
                     Icon(
                         imageVector = Icons.Default.Description,
                         contentDescription = "Profile",
-                        tint = Color(0xFF0F172A),
+                        tint = AppTheme.colors.textPrimary,
                         modifier = Modifier.size(26.dp)
                     )
                     Spacer(modifier = Modifier.width(14.dp))
@@ -752,13 +754,13 @@ fun ClashMainScreen(
                             text = "配置文件 (Profile)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (activeProfile != null) "$activeProfileDisplayName (已激活)" else activeProfileDisplayName,
                             fontSize = 13.sp,
-                            color = Color(0xFF64748B),
+                            color = AppTheme.colors.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -768,8 +770,8 @@ fun ClashMainScreen(
                     Surface(
                         modifier = Modifier.clickable { updateCurrentProfile() },
                         shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                        color = Color(0xFFF8FAFC)
+                        border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
+                        color = AppTheme.colors.surfaceVariant
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -779,13 +781,13 @@ fun ClashMainScreen(
                                 text = if (isUpdatingProfile) "更新中" else "更新",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF334155)
+                                color = AppTheme.colors.textPrimary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Update",
-                                tint = Color(0xFF334155),
+                                tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(15.dp)
                             )
                         }
@@ -799,7 +801,8 @@ fun ClashMainScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -809,8 +812,8 @@ fun ClashMainScreen(
                 ) {
                     HomeMenuItem(
                         icon = Icons.Default.Lan,
-                        iconBgColor = Color(0xFFDBEAFE), // Soft blue
-                        iconTintColor = Color(0xFF1D4ED8),
+                        iconBgColor = AppTheme.colors.statusInfoBg,
+                        iconTintColor = AppTheme.colors.statusInfoText,
                         title = "连接 (Connections)",
                         subtitle = "查看活动与历史连接详情",
                         onClick = onNavigateToConnections
@@ -818,8 +821,8 @@ fun ClashMainScreen(
 
                     HomeMenuItem(
                         icon = Icons.Default.Terminal,
-                        iconBgColor = Color(0xFFA7F3D0), // Light mint green
-                        iconTintColor = Color(0xFF065F46),
+                        iconBgColor = AppTheme.colors.statusSuccessBg,
+                        iconTintColor = AppTheme.colors.statusSuccessText,
                         title = "实时日志 (Logs)",
                         subtitle = "查看运行日志",
                         onClick = onNavigateToLogs
@@ -827,8 +830,8 @@ fun ClashMainScreen(
 
                     HomeMenuItem(
                         icon = Icons.Default.Settings,
-                        iconBgColor = Color(0xFFBAE6FD), // Sky blue
-                        iconTintColor = Color(0xFF0369A1),
+                        iconBgColor = AppTheme.colors.statusInfoBg,
+                        iconTintColor = AppTheme.colors.statusInfoText,
                         title = "设置 (Settings)",
                         subtitle = "自定义代理与应用行为",
                         onClick = onNavigateToSettings
@@ -836,8 +839,8 @@ fun ClashMainScreen(
 
                     HomeMenuItem(
                         icon = Icons.Default.HelpOutline,
-                        iconBgColor = Color(0xFFFED7AA), // Amber
-                        iconTintColor = Color(0xFFB45309),
+                        iconBgColor = AppTheme.colors.statusWarningBg,
+                        iconTintColor = AppTheme.colors.statusWarningText,
                         title = "帮助文档 (Help)",
                         subtitle = "使用指南与常见问题",
                         onClick = { showHelpDialog = true }
@@ -845,8 +848,8 @@ fun ClashMainScreen(
 
                     HomeMenuItem(
                         icon = Icons.Default.Info,
-                        iconBgColor = Color(0xFFE9D5FF), // Lavender/purple
-                        iconTintColor = Color(0xFF7E22CE),
+                        iconBgColor = AppTheme.colors.statusPurpleBg,
+                        iconTintColor = AppTheme.colors.statusPurpleText,
                         title = "关于软件 (About)",
                         subtitle = "版本 v1.18.0 - Clash Meta",
                         onClick = { showAboutDialog = true }
@@ -915,7 +918,7 @@ fun ClashMainScreen(
                                "3. 如何选择节点？\n点击【当前节点】卡片即可进入节点列表进行测速和选择。\n\n" +
                                "4. 如何添加配置？\n点击【配置文件】卡片进入配置管理，可下载订阅链接或导入本地 yaml 文件。",
                         fontSize = 14.sp,
-                        color = Color(0xFF334155),
+                        color = AppTheme.colors.textSecondary,
                         lineHeight = 20.sp
                     )
                 }
@@ -938,7 +941,7 @@ fun ClashMainScreen(
                     Text(
                         text = "Clash Meta for Android\n版本：v1.18.0 - Clash Meta\n基于 Mihomo (Clash.Meta) 与 EasyTier 核心驱动。\n提供快速、安全、稳定的全平台网络互联体验。",
                         fontSize = 14.sp,
-                        color = Color(0xFF334155),
+                        color = AppTheme.colors.textSecondary,
                         lineHeight = 22.sp
                     )
                 }
@@ -988,19 +991,19 @@ private fun HomeMenuItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
-                color = Color(0xFF64748B)
+                color = AppTheme.colors.textSecondary
             )
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Navigate",
-            tint = Color(0xFF94A3B8),
+            tint = AppTheme.colors.textMuted,
             modifier = Modifier.size(15.dp)
         )
     }

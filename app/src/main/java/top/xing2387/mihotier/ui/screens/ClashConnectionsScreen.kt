@@ -93,6 +93,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import top.xing2387.mihotier.core.config.BandwidthFormatter
+import top.xing2387.mihotier.ui.theme.AppTheme
 import java.time.Instant
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -146,6 +147,7 @@ fun ClashConnectionsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val colors = AppTheme.colors
     val coroutineScope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences(PREFS_CONNECTIONS, Context.MODE_PRIVATE) }
 
@@ -479,7 +481,7 @@ fun ClashConnectionsScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFEEF3F8),
+        containerColor = colors.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -490,13 +492,13 @@ fun ClashConnectionsScreen(
                             text = "连接列表 (Connections)",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = colors.textPrimary
                         )
                         Text(
                             text = "↓: ${BandwidthFormatter.formatTotalBytes(downloadTotal)}  ↑: ${BandwidthFormatter.formatTotalBytes(uploadTotal)}",
                             fontSize = 11.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = Color(0xFF475569)
+                            color = colors.textSecondary
                         )
                     }
                 },
@@ -510,7 +512,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                 },
@@ -521,7 +523,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                             contentDescription = if (isPaused) "继续刷新" else "暂停刷新",
-                            tint = if (isPaused) Color(0xFF0284C7) else Color(0xFF0F172A)
+                            tint = if (isPaused) colors.brandPrimary else colors.textPrimary
                         )
                     }
                     IconButton(
@@ -536,7 +538,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.Default.ScreenRotation,
                             contentDescription = "横竖屏旋转切换",
-                            tint = if (isLandscape) Color(0xFF0284C7) else Color(0xFF0F172A)
+                            tint = if (isLandscape) colors.brandPrimary else colors.textPrimary
                         )
                     }
                     IconButton(
@@ -548,7 +550,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = if (isTableMode) Icons.Default.ViewAgenda else Icons.Default.TableChart,
                             contentDescription = "切换表格/卡片视图",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                     IconButton(
@@ -557,7 +559,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "显示列配置 (Columns)",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                     IconButton(
@@ -566,12 +568,12 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.Default.DeleteSweep,
                             contentDescription = "全部关闭 (CLOSE ALL)",
-                            tint = Color(0xFFDC2626)
+                            tint = colors.statusDangerText
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = colors.background
                 )
             )
         }
@@ -592,12 +594,12 @@ fun ClashConnectionsScreen(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White)
+                        .background(colors.cardBackground)
                 ) {
                     val activeSelected = activeTab == 0
                     Box(
                         modifier = Modifier
-                            .background(if (activeSelected) Color(0xFF0284C7) else Color.White)
+                            .background(if (activeSelected) colors.brandPrimary else colors.cardBackground)
                             .clickable { activeTab = 0 }
                             .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
@@ -605,13 +607,13 @@ fun ClashConnectionsScreen(
                             text = "ACTIVE ${activeConnections.size}",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (activeSelected) Color.White else Color(0xFF0284C7)
+                            color = if (activeSelected) colors.tabSelectedText else colors.brandPrimary
                         )
                     }
                     val closedSelected = activeTab == 1
                     Box(
                         modifier = Modifier
-                            .background(if (closedSelected) Color(0xFF0284C7) else Color.White)
+                            .background(if (closedSelected) colors.brandPrimary else colors.cardBackground)
                             .clickable { activeTab = 1 }
                             .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
@@ -619,7 +621,7 @@ fun ClashConnectionsScreen(
                             text = "CLOSED ${closedConnections.size}",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (closedSelected) Color.White else Color(0xFF0284C7)
+                            color = if (closedSelected) colors.tabSelectedText else colors.brandPrimary
                         )
                     }
                 }
@@ -630,8 +632,8 @@ fun ClashConnectionsScreen(
                         .weight(1f)
                         .height(34.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                    color = colors.cardBackground,
+                    border = BorderStroke(1.dp, colors.cardBorder)
                 ) {
                     Row(
                         modifier = Modifier
@@ -642,7 +644,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = Color(0xFF94A3B8),
+                            tint = colors.textMuted,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -651,7 +653,7 @@ fun ClashConnectionsScreen(
                                 Text(
                                     text = "Filter conditions",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = colors.textMuted
                                 )
                             }
                             BasicTextField(
@@ -660,9 +662,9 @@ fun ClashConnectionsScreen(
                                 singleLine = true,
                                 textStyle = TextStyle(
                                     fontSize = 12.sp,
-                                    color = Color(0xFF0F172A)
+                                    color = colors.textPrimary
                                 ),
-                                cursorBrush = SolidColor(Color(0xFF0284C7)),
+                                cursorBrush = SolidColor(colors.brandPrimary),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -670,7 +672,7 @@ fun ClashConnectionsScreen(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "清除",
-                                tint = Color(0xFF94A3B8),
+                                tint = colors.textMuted,
                                 modifier = Modifier
                                     .size(15.dp)
                                     .clickable { filterQuery = "" }
@@ -682,7 +684,7 @@ fun ClashConnectionsScreen(
                 // CLOSE ALL Button matching desktop screenshot
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF0284C7),
+                    color = colors.brandPrimary,
                     modifier = Modifier
                         .height(34.dp)
                         .clickable { closeAllConnections() }
@@ -707,7 +709,8 @@ fun ClashConnectionsScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = colors.cardBackground),
+                    border = BorderStroke(1.dp, colors.cardBorder)
                 ) {
                     Box(
                         modifier = Modifier
@@ -718,7 +721,7 @@ fun ClashConnectionsScreen(
                         Text(
                             text = "Mihomo 核心未运行，请先开启代理开关",
                             fontSize = 14.sp,
-                            color = Color(0xFF64748B)
+                            color = colors.textMuted
                         )
                     }
                 }
@@ -732,8 +735,8 @@ fun ClashConnectionsScreen(
                         .fillMaxSize()
                         .padding(bottom = 12.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    colors = CardDefaults.cardColors(containerColor = colors.cardBackground),
+                    border = BorderStroke(1.dp, colors.cardBorder),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(
@@ -744,7 +747,7 @@ fun ClashConnectionsScreen(
                         // Table Header Row
                         Row(
                             modifier = Modifier
-                                .background(Color(0xFFF8FAFC))
+                                .background(colors.surfaceVariant)
                                 .padding(horizontal = 10.dp, vertical = 9.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -757,7 +760,7 @@ fun ClashConnectionsScreen(
                                     text = "${col.titleEn}$arrow",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isSorted) Color(0xFF0284C7) else Color(0xFF475569),
+                                    color = if (isSorted) colors.brandPrimary else colors.textSecondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier
@@ -774,7 +777,7 @@ fun ClashConnectionsScreen(
                                 )
                             }
                         }
-                        HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
+                        HorizontalDivider(color = colors.innerBorder, thickness = 1.dp)
 
                         if (filteredAndSorted.isEmpty()) {
                             Box(
@@ -786,7 +789,7 @@ fun ClashConnectionsScreen(
                                 Text(
                                     text = "   暂无匹配的连接记录",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = colors.textMuted
                                 )
                             }
                         } else {
@@ -804,11 +807,11 @@ fun ClashConnectionsScreen(
                                         visibleColumns.forEach { col ->
                                             val cellText = formatColumnValue(col, conn)
                                             val cellColor = when (col) {
-                                                ConnectionColumn.HOST -> Color(0xFF0F172A)
-                                                ConnectionColumn.DL_SPEED -> if (conn.dlSpeed > 0) Color(0xFF0284C7) else Color(0xFF64748B)
-                                                ConnectionColumn.UL_SPEED -> if (conn.ulSpeed > 0) Color(0xFF059669) else Color(0xFF64748B)
-                                                ConnectionColumn.CHAINS -> Color(0xFF1E293B)
-                                                else -> Color(0xFF475569)
+                                                ConnectionColumn.HOST -> colors.textPrimary
+                                                ConnectionColumn.DL_SPEED -> if (conn.dlSpeed > 0) colors.brandPrimary else colors.textMuted
+                                                ConnectionColumn.UL_SPEED -> if (conn.ulSpeed > 0) colors.statusSuccessText else colors.textMuted
+                                                ConnectionColumn.CHAINS -> colors.textSecondary
+                                                else -> colors.textSecondary
                                             }
                                             Text(
                                                 text = cellText,
@@ -824,7 +827,7 @@ fun ClashConnectionsScreen(
                                             )
                                         }
                                     }
-                                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 0.7.dp)
+                                    HorizontalDivider(color = colors.innerBorder, thickness = 0.7.dp)
                                 }
                             }
                         }
@@ -848,8 +851,8 @@ fun ClashConnectionsScreen(
                                 .fillMaxWidth()
                                 .clickable { selectedConnection = conn },
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = colors.cardBackground),
+                            border = BorderStroke(1.dp, colors.cardBorder),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
                             Column(
@@ -868,7 +871,7 @@ fun ClashConnectionsScreen(
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         fontFamily = FontFamily.Monospace,
-                                        color = Color(0xFF0F172A),
+                                        color = colors.textPrimary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
@@ -876,13 +879,13 @@ fun ClashConnectionsScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFE0F2FE)
+                                        color = colors.statusInfoBg
                                     ) {
                                         Text(
                                             text = conn.type,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0369A1),
+                                            color = colors.statusInfoText,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
@@ -891,7 +894,7 @@ fun ClashConnectionsScreen(
                                 Text(
                                     text = "${conn.chains}  ·  ${conn.rule}",
                                     fontSize = 11.5.sp,
-                                    color = Color(0xFF334155),
+                                    color = colors.textSecondary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -908,12 +911,12 @@ fun ClashConnectionsScreen(
                                         },
                                         fontSize = 11.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        color = Color(0xFF475569)
+                                        color = colors.textSecondary
                                     )
                                     Text(
                                         text = formatRelativeTime(conn.startEpochMs),
                                         fontSize = 11.sp,
-                                        color = Color(0xFF94A3B8)
+                                        color = colors.textMuted
                                     )
                                 }
 
@@ -921,7 +924,7 @@ fun ClashConnectionsScreen(
                                     Text(
                                         text = "进程: ${conn.process}",
                                         fontSize = 11.sp,
-                                        color = Color(0xFF64748B),
+                                        color = colors.textMuted,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -940,11 +943,13 @@ fun ClashConnectionsScreen(
     if (showColumnsDialog) {
         AlertDialog(
             onDismissRequest = { showColumnsDialog = false },
+            containerColor = colors.cardBackground,
             title = {
                 Text(
                     text = "Columns (显示字段)",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = colors.textPrimary
                 )
             },
             text = {
@@ -959,8 +964,8 @@ fun ClashConnectionsScreen(
                         val checked = col in visibleColumns
                         Surface(
                             shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            color = colors.surfaceSubtle,
+                            border = BorderStroke(1.dp, colors.innerBorder),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
@@ -1002,14 +1007,17 @@ fun ClashConnectionsScreen(
                                             saveVisibleColumns()
                                         }
                                     },
-                                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF0284C7))
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = colors.brandPrimary,
+                                        uncheckedColor = colors.textMuted
+                                    )
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = "${col.titleEn} (${col.titleZh})",
                                     fontSize = 13.5.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF0F172A),
+                                    color = colors.textPrimary,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -1027,7 +1035,7 @@ fun ClashConnectionsScreen(
                 ) {
                     Text(
                         text = "RESET TO DEFAULT",
-                        color = Color(0xFF0284C7),
+                        color = colors.brandPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -1035,7 +1043,10 @@ fun ClashConnectionsScreen(
             confirmButton = {
                 Button(
                     onClick = { showColumnsDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.brandPrimary,
+                        contentColor = Color.White
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("CLOSE", fontWeight = FontWeight.Bold)
@@ -1050,6 +1061,7 @@ fun ClashConnectionsScreen(
     selectedConnection?.let { conn ->
         AlertDialog(
             onDismissRequest = { selectedConnection = null },
+            containerColor = colors.cardBackground,
             title = {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1059,7 +1071,8 @@ fun ClashConnectionsScreen(
                     Text(
                         text = "连接详情",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
+                        fontSize = 17.sp,
+                        color = colors.textPrimary
                     )
                     IconButton(
                         onClick = {
@@ -1082,7 +1095,7 @@ fun ClashConnectionsScreen(
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = "复制",
-                            tint = Color(0xFF0284C7),
+                            tint = colors.brandPrimary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -1100,14 +1113,14 @@ fun ClashConnectionsScreen(
                             Text(
                                 text = "${col.titleEn} (${col.titleZh})",
                                 fontSize = 11.sp,
-                                color = Color(0xFF64748B)
+                                color = colors.textMuted
                             )
                             Text(
                                 text = formatColumnValue(col, conn).ifBlank { "-" },
                                 fontSize = 13.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF0F172A)
+                                color = colors.textPrimary
                             )
                         }
                     }
@@ -1123,7 +1136,7 @@ fun ClashConnectionsScreen(
                     ) {
                         Text(
                             text = "断开此连接",
-                            color = Color(0xFFDC2626),
+                            color = colors.statusDangerText,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1132,7 +1145,10 @@ fun ClashConnectionsScreen(
             confirmButton = {
                 Button(
                     onClick = { selectedConnection = null },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colors.brandPrimary,
+                        contentColor = Color.White
+                    )
                 ) {
                     Text("关闭")
                 }

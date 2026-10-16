@@ -82,6 +82,8 @@ import kotlinx.coroutines.launch
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.Profile
 import top.xing2387.mihotier.core.config.ProfileRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
+import top.xing2387.mihotier.ui.theme.appTextFieldColors
 import java.io.File
 import java.util.UUID
 
@@ -233,7 +235,7 @@ fun ClashProfileDetailScreen(
                         text = if (isExistingProfile) "编辑配置文件 (Edit Profile)" else "新建配置文件 (New Profile)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -241,16 +243,16 @@ fun ClashProfileDetailScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -262,8 +264,8 @@ fun ClashProfileDetailScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -276,7 +278,7 @@ fun ClashProfileDetailScreen(
                         text = "名称 (Name)",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -286,23 +288,17 @@ fun ClashProfileDetailScreen(
                             Text(
                                 text = "请输入配置名称",
                                 fontSize = 15.sp,
-                                color = Color(0xFF94A3B8)
+                                color = AppTheme.colors.textMuted
                             )
                         },
                         singleLine = true,
                         textStyle = TextStyle(
                             fontSize = 15.sp,
-                            color = Color(0xFF0F172A),
+                            color = AppTheme.colors.textPrimary,
                             fontWeight = FontWeight.Normal
                         ),
                         shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF5B8DEF),
-                            unfocusedBorderColor = Color(0xFFCBD5E1),
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedContainerColor = Color(0xFFF8FAFC),
-                            cursorColor = Color(0xFF104179)
-                        ),
+                        colors = appTextFieldColors(),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -314,7 +310,7 @@ fun ClashProfileDetailScreen(
                         text = "类型 (Type)",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -322,7 +318,7 @@ fun ClashProfileDetailScreen(
                             .fillMaxWidth()
                             .height(44.dp)
                             .clip(RoundedCornerShape(22.dp))
-                            .background(Color(0xFFE2E8F0))
+                            .background(AppTheme.colors.surfaceVariant)
                             .padding(3.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -333,7 +329,7 @@ fun ClashProfileDetailScreen(
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(
-                                    if (isSubscription) Color(0xFFBAE6FD) else Color.Transparent
+                                    if (isSubscription) AppTheme.colors.tabSelectedBg else Color.Transparent
                                 )
                                 .clickable { isSubscription = true },
                             contentAlignment = Alignment.Center
@@ -342,7 +338,7 @@ fun ClashProfileDetailScreen(
                                 text = "订阅 / URL",
                                 fontSize = 14.sp,
                                 fontWeight = if (isSubscription) FontWeight.SemiBold else FontWeight.Medium,
-                                color = if (isSubscription) Color(0xFF0369A1) else Color(0xFF64748B)
+                                color = if (isSubscription) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText
                             )
                         }
 
@@ -353,7 +349,7 @@ fun ClashProfileDetailScreen(
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(
-                                    if (!isSubscription) Color(0xFFBAE6FD) else Color.Transparent
+                                    if (!isSubscription) AppTheme.colors.tabSelectedBg else Color.Transparent
                                 )
                                 .clickable { isSubscription = false },
                             contentAlignment = Alignment.Center
@@ -362,7 +358,7 @@ fun ClashProfileDetailScreen(
                                 text = "本地文件 (File)",
                                 fontSize = 14.sp,
                                 fontWeight = if (!isSubscription) FontWeight.SemiBold else FontWeight.Medium,
-                                color = if (!isSubscription) Color(0xFF0369A1) else Color(0xFF64748B)
+                                color = if (!isSubscription) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText
                             )
                         }
                     }
@@ -380,13 +376,13 @@ fun ClashProfileDetailScreen(
                             text = "链接 / 路径 (URL / Path)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
 
                         if ((isExistingProfile || localUri != null) && configFile.exists()) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFBAE6FD),
+                                color = AppTheme.colors.statusInfoBg,
                                 modifier = Modifier.clickable { showConfigEditorScreen = true }
                             ) {
                                 Row(
@@ -396,7 +392,7 @@ fun ClashProfileDetailScreen(
                                     Icon(
                                         imageVector = Icons.Default.Edit,
                                         contentDescription = "Edit YAML",
-                                        tint = Color(0xFF0369A1),
+                                        tint = AppTheme.colors.statusInfoText,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
@@ -404,7 +400,7 @@ fun ClashProfileDetailScreen(
                                         text = "编辑 YAML",
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF0369A1)
+                                        color = AppTheme.colors.statusInfoText
                                     )
                                 }
                             }
@@ -420,23 +416,17 @@ fun ClashProfileDetailScreen(
                                 Text(
                                     text = "http://example.com/config.yaml",
                                     fontSize = 15.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = AppTheme.colors.textMuted
                                 )
                             },
                             singleLine = true,
                             textStyle = TextStyle(
                                 fontSize = 15.sp,
-                                color = Color(0xFF0F172A),
+                                color = AppTheme.colors.textPrimary,
                                 fontWeight = FontWeight.Normal
                             ),
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF5B8DEF),
-                                unfocusedBorderColor = Color(0xFFCBD5E1),
-                                focusedContainerColor = Color(0xFFF8FAFC),
-                                unfocusedContainerColor = Color(0xFFF8FAFC),
-                                cursorColor = Color(0xFF104179)
-                            ),
+                            colors = appTextFieldColors(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Uri,
                                 imeAction = ImeAction.Done
@@ -450,8 +440,8 @@ fun ClashProfileDetailScreen(
                                 .fillMaxWidth()
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF8FAFC))
-                                .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(12.dp))
+                                .background(AppTheme.colors.surfaceSubtle)
+                                .border(1.dp, AppTheme.colors.innerBorder, RoundedCornerShape(12.dp))
                                 .clickable { filePickerLauncher.launch("*/*") }
                                 .padding(horizontal = 16.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -460,7 +450,7 @@ fun ClashProfileDetailScreen(
                             Text(
                                 text = if (localFileName.isNotBlank()) localFileName else "点击选择本地 YAML 配置文件...",
                                 fontSize = 15.sp,
-                                color = if (localFileName.isNotBlank()) Color(0xFF0F172A) else Color(0xFF94A3B8),
+                                color = if (localFileName.isNotBlank()) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f)
@@ -469,7 +459,7 @@ fun ClashProfileDetailScreen(
                             Icon(
                                 imageVector = Icons.Default.FolderOpen,
                                 contentDescription = "Select File",
-                                tint = Color(0xFF475569),
+                                tint = AppTheme.colors.textSecondary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -482,7 +472,7 @@ fun ClashProfileDetailScreen(
                         text = "自动更新 (Auto-Update) (Optional)",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isSubscription) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                        color = if (isSubscription) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -491,10 +481,10 @@ fun ClashProfileDetailScreen(
                                 .fillMaxWidth()
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSubscription) Color(0xFFF8FAFC) else Color(0xFFF1F5F9))
+                                .background(if (isSubscription) AppTheme.colors.surfaceSubtle else AppTheme.colors.surfaceVariant.copy(alpha = 0.5f))
                                 .border(
                                     width = 1.dp,
-                                    color = if (isSubscription) Color(0xFFCBD5E1) else Color(0xFFE2E8F0),
+                                    color = if (isSubscription) AppTheme.colors.innerBorder else AppTheme.colors.cardBorder,
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 .clickable(enabled = isSubscription) {
@@ -507,12 +497,12 @@ fun ClashProfileDetailScreen(
                             Text(
                                 text = if (isSubscription) autoUpdate else "不自动更新 (本地文件)",
                                 fontSize = 15.sp,
-                                color = if (isSubscription) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                                color = if (isSubscription) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
                             )
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowDown,
                                 contentDescription = "Select Auto-Update Interval",
-                                tint = if (isSubscription) Color(0xFF475569) else Color(0xFF94A3B8),
+                                tint = if (isSubscription) AppTheme.colors.textSecondary else AppTheme.colors.textMuted,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -521,7 +511,7 @@ fun ClashProfileDetailScreen(
                             expanded = autoUpdateExpanded,
                             onDismissRequest = { autoUpdateExpanded = false },
                             shape = RoundedCornerShape(16.dp),
-                            containerColor = Color.White,
+                            containerColor = AppTheme.colors.cardBackground,
                             modifier = Modifier.fillMaxWidth(0.82f)
                         ) {
                             autoUpdateOptions.forEach { option ->
@@ -531,7 +521,7 @@ fun ClashProfileDetailScreen(
                                             text = option,
                                             fontSize = 15.sp,
                                             fontWeight = if (option == autoUpdate) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (option == autoUpdate) Color(0xFF0369A1) else Color(0xFF0F172A)
+                                            color = if (option == autoUpdate) AppTheme.colors.brandPrimary else AppTheme.colors.textPrimary
                                         )
                                     },
                                     onClick = {
@@ -554,9 +544,9 @@ fun ClashProfileDetailScreen(
                             .height(52.dp),
                         shape = RoundedCornerShape(26.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF104179),
+                            containerColor = AppTheme.colors.brandPrimary,
                             contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF104179).copy(alpha = 0.6f),
+                            disabledContainerColor = AppTheme.colors.brandPrimary.copy(alpha = 0.6f),
                             disabledContentColor = Color.White
                         ),
                         elevation = ButtonDefaults.buttonElevation(
@@ -691,7 +681,7 @@ private fun ClashConfigYamlEditorScreen(
                         text = "编辑配置文件 (YAML)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -699,7 +689,7 @@ private fun ClashConfigYamlEditorScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -708,16 +698,16 @@ private fun ClashConfigYamlEditorScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                             contentDescription = "Open in External App",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -730,8 +720,8 @@ private fun ClashConfigYamlEditorScreen(
                     .fillMaxSize()
                     .padding(bottom = 8.dp),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -753,7 +743,7 @@ private fun ClashConfigYamlEditorScreen(
                                 text = displayFileName,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A),
+                                color = AppTheme.colors.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false)
@@ -761,13 +751,13 @@ private fun ClashConfigYamlEditorScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFBAE6FD)
+                                color = AppTheme.colors.statusInfoBg
                             ) {
                                 Text(
                                     text = "YAML",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0369A1),
+                                    color = AppTheme.colors.statusInfoText,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                                 )
                             }
@@ -777,7 +767,7 @@ private fun ClashConfigYamlEditorScreen(
                         Text(
                             text = "${lineCount} 行 · ${configText.length} 字符",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = AppTheme.colors.textSecondary
                         )
                     }
 
@@ -792,23 +782,17 @@ private fun ClashConfigYamlEditorScreen(
                                 text = "# 在此输入或粘贴 Clash YAML 配置内容...",
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 13.sp,
-                                color = Color(0xFF94A3B8)
+                                color = AppTheme.colors.textMuted
                             )
                         },
                         textStyle = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,
                             lineHeight = 19.sp,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF5B8DEF),
-                            unfocusedBorderColor = Color(0xFFCBD5E1),
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedContainerColor = Color(0xFFF8FAFC),
-                            cursorColor = Color(0xFF104179)
-                        ),
+                        colors = appTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -830,8 +814,8 @@ private fun ClashConfigYamlEditorScreen(
                                 .height(50.dp),
                             shape = RoundedCornerShape(25.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFBAE6FD),
-                                contentColor = Color(0xFF0369A1)
+                                containerColor = AppTheme.colors.statusInfoBg,
+                                contentColor = AppTheme.colors.statusInfoText
                             ),
                             elevation = ButtonDefaults.buttonElevation(
                                 defaultElevation = 0.dp,
@@ -864,7 +848,7 @@ private fun ClashConfigYamlEditorScreen(
                                 .height(50.dp),
                             shape = RoundedCornerShape(25.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF104179),
+                                containerColor = AppTheme.colors.brandPrimary,
                                 contentColor = Color.White
                             ),
                             elevation = ButtonDefaults.buttonElevation(

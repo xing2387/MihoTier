@@ -69,6 +69,7 @@ import kotlinx.coroutines.launch
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.Profile
 import top.xing2387.mihotier.core.config.ProfileRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +98,7 @@ fun ClashProfilesScreen(
                         text = "配置文件 (Profiles)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -105,7 +106,7 @@ fun ClashProfilesScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -140,23 +141,23 @@ fun ClashProfilesScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                     IconButton(onClick = { onNavigateToDetail(null) }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -330,11 +331,11 @@ fun ProfileCard(
             .clickable(onClick = onCardClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = AppTheme.colors.cardBackground
         ),
         border = BorderStroke(
             width = if (isActive) 1.5.dp else 1.dp,
-            color = if (isActive) Color(0xFF5B8DEF) else Color(0xFFE2E8F0)
+            color = if (isActive) AppTheme.colors.brandPrimary else AppTheme.colors.cardBorder
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -348,8 +349,8 @@ fun ProfileCard(
                 selected = isActive,
                 onClick = onCardClick,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = Color(0xFF1D68BD),
-                    unselectedColor = Color(0xFF64748B)
+                    selectedColor = AppTheme.colors.brandPrimary,
+                    unselectedColor = AppTheme.colors.textSecondary
                 )
             )
 
@@ -368,7 +369,7 @@ fun ProfileCard(
                         text = name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A),
+                        color = AppTheme.colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -376,13 +377,13 @@ fun ProfileCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFFBAE6FD)
+                        color = AppTheme.colors.statusInfoBg
                     ) {
                         Text(
                             text = if (isSubscription) "订阅" else "本地",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0369A1),
+                            color = AppTheme.colors.statusInfoText,
                             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                         )
                     }
@@ -394,7 +395,7 @@ fun ProfileCard(
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = Color(0xFF475569),
+                    color = AppTheme.colors.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -406,7 +407,7 @@ fun ProfileCard(
                 Text(
                     text = timeAgo,
                     fontSize = 12.sp,
-                    color = Color(0xFF64748B),
+                    color = AppTheme.colors.textMuted,
                     maxLines = 1
                 )
             }
@@ -416,7 +417,7 @@ fun ProfileCard(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "More options",
-                        tint = Color(0xFF0F172A)
+                        tint = AppTheme.colors.textPrimary
                     )
                 }
 
@@ -425,21 +426,21 @@ fun ProfileCard(
                     onDismissRequest = { menuExpanded = false },
                     offset = DpOffset(x = 0.dp, y = 0.dp),
                     shape = RoundedCornerShape(16.dp),
-                    containerColor = Color.White
+                    containerColor = AppTheme.colors.cardBackground
                 ) {
                     DropdownMenuItem(
                         text = {
                             Text(
                                 text = "Update",
                                 fontSize = 15.sp,
-                                color = Color(0xFF0F172A)
+                                color = AppTheme.colors.textPrimary
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Update",
-                                tint = Color(0xFF0F172A),
+                                tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         },
@@ -453,14 +454,14 @@ fun ProfileCard(
                             Text(
                                 text = "Edit",
                                 fontSize = 15.sp,
-                                color = Color(0xFF0F172A)
+                                color = AppTheme.colors.textPrimary
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit",
-                                tint = Color(0xFF0F172A),
+                                tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         },
@@ -474,14 +475,14 @@ fun ProfileCard(
                             Text(
                                 text = "Share",
                                 fontSize = 15.sp,
-                                color = Color(0xFF0F172A)
+                                color = AppTheme.colors.textPrimary
                             )
                         },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.CloudUpload,
                                 contentDescription = "Share",
-                                tint = Color(0xFF0F172A),
+                                tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                         },

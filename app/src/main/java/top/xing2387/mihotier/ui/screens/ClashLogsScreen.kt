@@ -76,6 +76,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
+import top.xing2387.mihotier.ui.theme.AppTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -96,6 +97,7 @@ fun ClashLogsScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val colors = AppTheme.colors
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
@@ -229,7 +231,7 @@ fun ClashLogsScreen(
                         text = "实时日志 (Logs)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -237,7 +239,7 @@ fun ClashLogsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                 },
@@ -257,7 +259,7 @@ fun ClashLogsScreen(
                         Icon(
                             imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
                             contentDescription = if (isPaused) "Resume" else "Pause",
-                            tint = if (isRunning) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                            tint = if (isRunning) (if (isPaused) colors.brandPrimary else colors.textPrimary) else colors.textMuted
                         )
                     }
 
@@ -269,16 +271,16 @@ fun ClashLogsScreen(
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Clear Logs",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = colors.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -298,8 +300,8 @@ fun ClashLogsScreen(
                         .weight(1f)
                         .height(36.dp),
                     shape = RoundedCornerShape(18.dp),
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                    color = Color.White
+                    border = BorderStroke(1.dp, colors.cardBorder),
+                    color = colors.cardBackground
                 ) {
                     Row(
                         modifier = Modifier
@@ -310,7 +312,7 @@ fun ClashLogsScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color(0xFF64748B),
+                            tint = colors.textMuted,
                             modifier = Modifier.size(17.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -319,7 +321,7 @@ fun ClashLogsScreen(
                                 Text(
                                     text = "搜索日志...",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = colors.textMuted
                                 )
                             }
                             BasicTextField(
@@ -328,16 +330,16 @@ fun ClashLogsScreen(
                                 singleLine = true,
                                 textStyle = TextStyle(
                                     fontSize = 12.sp,
-                                    color = Color(0xFF0F172A)
+                                    color = colors.textPrimary
                                 ),
-                                cursorBrush = SolidColor(Color(0xFF0284C7))
+                                cursorBrush = SolidColor(colors.brandPrimary)
                             )
                         }
                         if (searchQuery.isNotEmpty()) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Clear Search",
-                                tint = Color(0xFF64748B),
+                                tint = colors.textMuted,
                                 modifier = Modifier
                                     .size(16.dp)
                                     .clickable { searchQuery = "" }
@@ -355,17 +357,17 @@ fun ClashLogsScreen(
                     Text(
                         text = "自动滚动",
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = colors.textSecondary
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Switch(
                         checked = isAutoScroll,
                         onCheckedChange = { isAutoScroll = it },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF5B7EAC),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFFCBD5E1)
+                            checkedThumbColor = colors.cardBackground,
+                            checkedTrackColor = colors.brandPrimary,
+                            uncheckedThumbColor = colors.cardBackground,
+                            uncheckedTrackColor = colors.innerBorder
                         )
                     )
                 }
@@ -387,10 +389,10 @@ fun ClashLogsScreen(
                             .clip(RoundedCornerShape(8.dp))
                             .clickable { updateLogLevel(level) },
                         shape = RoundedCornerShape(8.dp),
-                        color = if (isSelected) Color(0xFFBAE6FD) else Color.Transparent,
+                        color = if (isSelected) (if (colors.isDark) colors.brandPrimary.copy(alpha = 0.25f) else Color(0xFFBAE6FD)) else Color.Transparent,
                         border = BorderStroke(
                             1.dp,
-                            if (isSelected) Color(0xFF38BDF8) else Color(0xFFCBD5E1)
+                            if (isSelected) colors.brandPrimary else colors.cardBorder
                         )
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -398,7 +400,7 @@ fun ClashLogsScreen(
                                 text = level,
                                 fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color(0xFF0369A1) else Color(0xFF64748B)
+                                color = if (isSelected) (if (colors.isDark) Color(0xFF38BDF8) else Color(0xFF0369A1)) else colors.textSecondary
                             )
                         }
                     }
@@ -416,8 +418,8 @@ fun ClashLogsScreen(
                 Card(
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    colors = CardDefaults.cardColors(containerColor = colors.cardBackground),
+                    border = BorderStroke(1.dp, colors.cardBorder)
                 ) {
                     if (!isRunning) {
                         Box(
@@ -428,14 +430,14 @@ fun ClashLogsScreen(
                                 Icon(
                                     imageVector = Icons.Default.Terminal,
                                     contentDescription = null,
-                                    tint = Color(0xFF94A3B8),
+                                    tint = colors.textMuted,
                                     modifier = Modifier.size(48.dp)
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "代理未开启，开启代理后自动连接实时日志",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF64748B)
+                                    color = colors.textMuted
                                 )
                             }
                         }
@@ -447,7 +449,7 @@ fun ClashLogsScreen(
                             Text(
                                 text = if (searchQuery.isNotBlank()) "未匹配到相关日志" else "等待日志流输出...",
                                 fontSize = 13.sp,
-                                color = Color(0xFF94A3B8)
+                                color = colors.textMuted
                             )
                         }
                     } else {
@@ -489,7 +491,8 @@ fun ClashLogsScreen(
                                 }
                             },
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFF0F172A),
+                        color = colors.surfaceVariant,
+                        border = BorderStroke(1.dp, colors.cardBorder),
                         shadowElevation = 4.dp
                     ) {
                         Row(
@@ -499,13 +502,13 @@ fun ClashLogsScreen(
                             Icon(
                                 imageVector = Icons.Default.ArrowDownward,
                                 contentDescription = "Scroll down",
-                                tint = Color.White,
+                                tint = colors.textPrimary,
                                 modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "回到最新",
-                                color = Color.White,
+                                color = colors.textPrimary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -524,19 +527,21 @@ fun LogRowItem(
     entry: LogEntry,
     searchQuery: String
 ) {
+    val colors = AppTheme.colors
+
     // Semantic Badge Color Mapping
-    val (badgeBg, badgeText) = remember(entry.tag, entry.level) {
+    val (badgeBg, badgeText) = remember(entry.tag, entry.level, colors.isDark) {
         when (entry.tag.uppercase()) {
-            "RULE", "INFO" -> Pair(Color(0xFFBAE6FD), Color(0xFF0369A1)) // Sky blue
-            "DNS", "WARN", "WARNING" -> Pair(Color(0xFFFED7AA), Color(0xFFC2410C)) // Amber orange
-            "TCP", "ERROR" -> Pair(Color(0xFFFECACA), Color(0xFFDC2626)) // Coral red
-            "DEBUG" -> Pair(Color(0xFFF1F5F9), Color(0xFF64748B)) // Slate gray
+            "RULE", "INFO" -> Pair(colors.statusInfoBg, colors.statusInfoText)
+            "DNS", "WARN", "WARNING" -> Pair(colors.statusWarningBg, colors.statusWarningText)
+            "TCP", "ERROR" -> Pair(colors.statusDangerBg, colors.statusDangerText)
+            "DEBUG" -> Pair(colors.surfaceSubtle, colors.textMuted)
             else -> {
                 when (entry.level.lowercase()) {
-                    "error" -> Pair(Color(0xFFFECACA), Color(0xFFDC2626))
-                    "warn", "warning" -> Pair(Color(0xFFFED7AA), Color(0xFFC2410C))
-                    "debug" -> Pair(Color(0xFFF1F5F9), Color(0xFF64748B))
-                    else -> Pair(Color(0xFFBAE6FD), Color(0xFF0369A1))
+                    "error" -> Pair(colors.statusDangerBg, colors.statusDangerText)
+                    "warn", "warning" -> Pair(colors.statusWarningBg, colors.statusWarningText)
+                    "debug" -> Pair(colors.surfaceSubtle, colors.textMuted)
+                    else -> Pair(colors.statusInfoBg, colors.statusInfoText)
                 }
             }
         }
@@ -553,7 +558,7 @@ fun LogRowItem(
             text = entry.time,
             fontSize = 12.sp,
             fontFamily = FontFamily.Monospace,
-            color = Color(0xFF64748B),
+            color = colors.textMuted,
             modifier = Modifier.padding(top = 1.dp)
         )
 
@@ -577,13 +582,15 @@ fun LogRowItem(
         Spacer(modifier = Modifier.width(6.dp))
 
         // Message text with optional keyword highlight
-        val annotatedMessage = remember(entry.message, searchQuery) {
+        val annotatedMessage = remember(entry.message, searchQuery, colors.isDark) {
             if (searchQuery.isBlank()) {
                 buildAnnotatedString { append(entry.message) }
             } else {
                 buildAnnotatedString {
                     val text = entry.message
                     val q = searchQuery.trim()
+                    val highlightBg = if (colors.isDark) colors.brandPrimary.copy(alpha = 0.35f) else Color(0xFFFEF08A)
+                    val highlightText = if (colors.isDark) Color.White else Color(0xFF0F172A)
                     var startIndex = 0
                     while (startIndex < text.length) {
                         val index = text.indexOf(q, startIndex, ignoreCase = true)
@@ -594,7 +601,7 @@ fun LogRowItem(
                         if (index > startIndex) {
                             append(text.substring(startIndex, index))
                         }
-                        withStyle(SpanStyle(background = Color(0xFFFEF08A), fontWeight = FontWeight.Bold)) {
+                        withStyle(SpanStyle(background = highlightBg, color = highlightText, fontWeight = FontWeight.Bold)) {
                             append(text.substring(index, index + q.length))
                         }
                         startIndex = index + q.length
@@ -607,7 +614,7 @@ fun LogRowItem(
             text = annotatedMessage,
             fontSize = 12.sp,
             fontFamily = FontFamily.Monospace,
-            color = Color(0xFF0F172A),
+            color = colors.textPrimary,
             lineHeight = 16.sp,
             modifier = Modifier.padding(top = 1.dp)
         )

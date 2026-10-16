@@ -108,6 +108,8 @@ import top.xing2387.mihotier.core.config.EasyTierNetworkProfile
 import top.xing2387.mihotier.core.config.EasyTierPortForward
 import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.NetworkingMethod
+import top.xing2387.mihotier.ui.theme.AppTheme
+import top.xing2387.mihotier.ui.theme.appTextFieldColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -196,7 +198,7 @@ fun EasyTierScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFEEF3F8),
+        containerColor = AppTheme.colors.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -205,16 +207,16 @@ fun EasyTierScreen(
                             text = "EasyTier 异地组网",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
-                            color = if (runtimeState.isRunning) Color(0xFFD1FAE5) else Color(0xFFE0F2FE),
+                            color = if (runtimeState.isRunning) AppTheme.colors.statusSuccessBg else AppTheme.colors.statusInfoBg,
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
                                 text = if (runtimeState.isRunning) "RUNNING" else "CORE v2",
-                                color = if (runtimeState.isRunning) Color(0xFF065F46) else Color(0xFF0369A1),
+                                color = if (runtimeState.isRunning) AppTheme.colors.statusSuccessText else AppTheme.colors.statusInfoText,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -227,7 +229,7 @@ fun EasyTierScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -236,21 +238,21 @@ fun EasyTierScreen(
                         Icon(
                             imageVector = Icons.Default.Hub,
                             contentDescription = "双核桥接指南",
-                            tint = Color(0xFF0284C7)
+                            tint = AppTheme.colors.statusInfoText
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
         bottomBar = {
             if (activeTab == 0) {
                 Surface(
-                    color = Color.White,
+                    color = AppTheme.colors.cardBackground,
                     shadowElevation = 8.dp,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Row(
                         modifier = Modifier
@@ -262,7 +264,7 @@ fun EasyTierScreen(
                     ) {
                         TextButton(
                             onClick = { showTomlEditorSheet = true },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF104179))
+                            colors = ButtonDefaults.textButtonColors(contentColor = AppTheme.colors.brandPrimary)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.EditNote,
@@ -278,12 +280,12 @@ fun EasyTierScreen(
                             if (currentProfile.useCustomToml) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
-                                    color = Color(0xFFFEF3C7),
+                                    color = AppTheme.colors.statusWarningBg,
                                     shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
                                         text = "自定义 TOML",
-                                        color = Color(0xFFB45309),
+                                        color = AppTheme.colors.statusWarningText,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
@@ -300,7 +302,7 @@ fun EasyTierScreen(
                                     showDeleteConfirmDialog = true
                                 }
                             },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFDC2626))
+                            colors = ButtonDefaults.textButtonColors(contentColor = AppTheme.colors.statusDangerText)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.DeleteOutline,
@@ -336,7 +338,7 @@ fun EasyTierScreen(
                 // Left '+' Button to add new network profile
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFF104179),
+                    color = AppTheme.colors.brandPrimary,
                     modifier = Modifier
                         .size(48.dp)
                         .clickable { showCreateProfileDialog = true }
@@ -355,8 +357,8 @@ fun EasyTierScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        color = AppTheme.colors.cardBackground,
+                        border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
@@ -377,20 +379,20 @@ fun EasyTierScreen(
                                     text = currentProfile.instanceName.ifBlank { "easytier" },
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A),
+                                    color = AppTheme.colors.textPrimary,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
-                                    color = if (isCurrentProfileRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9),
+                                    color = if (isCurrentProfileRunning) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant,
                                     shape = RoundedCornerShape(999.dp)
                                 ) {
                                     Text(
                                         text = if (isCurrentProfileRunning) "running" else "stopped",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (isCurrentProfileRunning) Color(0xFF065F46) else Color(0xFF64748B),
+                                        color = if (isCurrentProfileRunning) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                     )
                                 }
@@ -398,7 +400,7 @@ fun EasyTierScreen(
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = "切换配置",
-                                tint = Color(0xFF475569)
+                                tint = AppTheme.colors.textSecondary
                             )
                         }
                     }
@@ -406,7 +408,7 @@ fun EasyTierScreen(
                     DropdownMenu(
                         expanded = showProfileDropdown,
                         onDismissRequest = { showProfileDropdown = false },
-                        modifier = Modifier.background(Color.White)
+                        modifier = Modifier.background(AppTheme.colors.cardBackground)
                     ) {
                         profiles.forEach { item ->
                             val isItemRunning = runtimeState.isRunning && runtimeState.runningProfileId == item.id
@@ -419,16 +421,16 @@ fun EasyTierScreen(
                                         Text(
                                             text = item.instanceName.ifBlank { "easytier" },
                                             fontWeight = if (item.id == currentProfile.id) FontWeight.Bold else FontWeight.Normal,
-                                            color = Color(0xFF0F172A)
+                                            color = AppTheme.colors.textPrimary
                                         )
                                         Surface(
-                                            color = if (isItemRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9),
+                                            color = if (isItemRunning) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant,
                                             shape = RoundedCornerShape(999.dp)
                                         ) {
                                             Text(
                                                 text = if (isItemRunning) "running" else "stopped",
                                                 fontSize = 10.sp,
-                                                color = if (isItemRunning) Color(0xFF065F46) else Color(0xFF64748B),
+                                                color = if (isItemRunning) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -446,8 +448,8 @@ fun EasyTierScreen(
                 // Right Edit Name / Settings Button
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    color = AppTheme.colors.cardBackground,
+                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                     modifier = Modifier
                         .size(48.dp)
                         .clickable { showRenameProfileDialog = true }
@@ -456,7 +458,7 @@ fun EasyTierScreen(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "实例设置",
-                            tint = Color(0xFF334155),
+                            tint = AppTheme.colors.textSecondary,
                             modifier = Modifier.size(21.dp)
                         )
                     }
@@ -466,8 +468,8 @@ fun EasyTierScreen(
             // 2. Step Segmented Switcher: [ 1. 网络配置 ] | [ 2. 运行状态 ]
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                color = AppTheme.colors.cardBackground,
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -481,7 +483,7 @@ fun EasyTierScreen(
                         val selected = activeTab == index
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (selected) Color(0xFFBAE6FD) else Color.Transparent,
+                            color = if (selected) AppTheme.colors.tabSelectedBg else Color.Transparent,
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { activeTab = index }
@@ -496,7 +498,7 @@ fun EasyTierScreen(
                                         modifier = Modifier
                                             .size(8.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFF10B981))
+                                            .background(AppTheme.colors.statusSuccessText)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                 }
@@ -504,7 +506,7 @@ fun EasyTierScreen(
                                     text = title,
                                     fontSize = 13.sp,
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (selected) Color(0xFF075985) else Color(0xFF64748B)
+                                    color = if (selected) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText
                                 )
                             }
                         }
@@ -521,9 +523,9 @@ fun EasyTierScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Column(
                         modifier = Modifier
@@ -541,13 +543,13 @@ fun EasyTierScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFFE0F2FE)),
+                                        .background(AppTheme.colors.statusInfoBg),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Lan,
                                         contentDescription = null,
-                                        tint = Color(0xFF0284C7),
+                                        tint = AppTheme.colors.statusInfoText,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -556,7 +558,7 @@ fun EasyTierScreen(
                                     text = "基础设置",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = AppTheme.colors.textPrimary
                                 )
                             }
 
@@ -566,7 +568,7 @@ fun EasyTierScreen(
                                     text = "DHCP",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF334155)
+                                    color = AppTheme.colors.textSecondary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Switch(
@@ -576,7 +578,7 @@ fun EasyTierScreen(
                                     },
                                     colors = SwitchDefaults.colors(
                                         checkedThumbColor = Color.White,
-                                        checkedTrackColor = Color(0xFF104179)
+                                        checkedTrackColor = AppTheme.colors.brandPrimary
                                     )
                                 )
                             }
@@ -599,6 +601,7 @@ fun EasyTierScreen(
                                 label = { Text("虚拟 IPv4 地址 (Virtual IPv4)") },
                                 placeholder = { Text("例如: 10.144.144.1") },
                                 singleLine = true,
+                                colors = appTextFieldColors(),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
                             )
@@ -606,8 +609,8 @@ fun EasyTierScreen(
                             if (!currentProfile.dhcp) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFF8FAFC),
-                                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                    color = AppTheme.colors.surfaceVariant,
+                                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                                     modifier = Modifier.height(56.dp)
                                 ) {
                                     Row(
@@ -619,7 +622,7 @@ fun EasyTierScreen(
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Monospace,
-                                            color = Color(0xFF0F172A)
+                                            color = AppTheme.colors.textPrimary
                                         )
                                         Column(
                                             modifier = Modifier.padding(start = 4.dp),
@@ -628,7 +631,7 @@ fun EasyTierScreen(
                                             Icon(
                                                 imageVector = Icons.Default.KeyboardArrowUp,
                                                 contentDescription = "增加掩码",
-                                                tint = Color(0xFF475569),
+                                                tint = AppTheme.colors.textSecondary,
                                                 modifier = Modifier
                                                     .size(18.dp)
                                                     .clickable {
@@ -639,7 +642,7 @@ fun EasyTierScreen(
                                             Icon(
                                                 imageVector = Icons.Default.KeyboardArrowDown,
                                                 contentDescription = "减少掩码",
-                                                tint = Color(0xFF475569),
+                                                tint = AppTheme.colors.textSecondary,
                                                 modifier = Modifier
                                                     .size(18.dp)
                                                     .clickable {
@@ -660,6 +663,7 @@ fun EasyTierScreen(
                             label = { Text("网络名称 (Network Name)") },
                             placeholder = { Text("easytier") },
                             singleLine = true,
+                            colors = appTextFieldColors(),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
                         )
@@ -671,6 +675,7 @@ fun EasyTierScreen(
                             label = { Text("网络密钥 (Network Secret)") },
                             placeholder = { Text("留空则不设密码") },
                             singleLine = true,
+                            colors = appTextFieldColors(),
                             visualTransformation = if (showSecretPassword) {
                                 VisualTransformation.None
                             } else {
@@ -694,13 +699,13 @@ fun EasyTierScreen(
                                 text = "组网方式 (Networking Method)",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF475569)
+                                color = AppTheme.colors.textSecondary
                             )
 
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = AppTheme.colors.surfaceVariant,
+                                border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
@@ -713,7 +718,7 @@ fun EasyTierScreen(
                                         val isSelected = currentProfile.networkingMethod == method
                                         Surface(
                                             shape = RoundedCornerShape(9.dp),
-                                            color = if (isSelected) Color(0xFFBAE6FD) else Color.Transparent,
+                                            color = if (isSelected) AppTheme.colors.tabSelectedBg else Color.Transparent,
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clickable {
@@ -729,7 +734,7 @@ fun EasyTierScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.Check,
                                                         contentDescription = null,
-                                                        tint = Color(0xFF075985),
+                                                        tint = AppTheme.colors.tabSelectedText,
                                                         modifier = Modifier.size(15.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
@@ -738,7 +743,7 @@ fun EasyTierScreen(
                                                     text = method.label,
                                                     fontSize = 12.sp,
                                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                                    color = if (isSelected) Color(0xFF075985) else Color(0xFF64748B)
+                                                    color = if (isSelected) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText
                                                 )
                                             }
                                         }
@@ -756,6 +761,7 @@ fun EasyTierScreen(
                                     label = { Text("公共服务器地址 (Public Server)") },
                                     placeholder = { Text("tcp://public.easytier.top:11010") },
                                     singleLine = true,
+                                    colors = appTextFieldColors(),
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp)
                                 )
@@ -769,8 +775,8 @@ fun EasyTierScreen(
                                             currentProfile.peerUrls.forEach { peerUri ->
                                                 Surface(
                                                     shape = RoundedCornerShape(10.dp),
-                                                    color = Color(0xFFF8FAFC),
-                                                    border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                                                    color = AppTheme.colors.surfaceVariant,
+                                                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder)
                                                 ) {
                                                     Row(
                                                         modifier = Modifier
@@ -784,7 +790,7 @@ fun EasyTierScreen(
                                                             fontSize = 13.sp,
                                                             fontFamily = FontFamily.Monospace,
                                                             fontWeight = FontWeight.Medium,
-                                                            color = Color(0xFF1E293B),
+                                                            color = AppTheme.colors.textPrimary,
                                                             modifier = Modifier.weight(1f),
                                                             maxLines = 1,
                                                             overflow = TextOverflow.Ellipsis
@@ -800,7 +806,7 @@ fun EasyTierScreen(
                                                             Icon(
                                                                 imageVector = Icons.Default.Close,
                                                                 contentDescription = "移除对端",
-                                                                tint = Color(0xFF64748B),
+                                                                tint = AppTheme.colors.textSecondary,
                                                                 modifier = Modifier.size(16.dp)
                                                             )
                                                         }
@@ -822,6 +828,7 @@ fun EasyTierScreen(
                                             label = { Text("添加对端地址 (Peer URLs)") },
                                             placeholder = { Text("例如: udp://1.2.3.4:11010") },
                                             singleLine = true,
+                                            colors = appTextFieldColors(),
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp)
                                         )
@@ -842,8 +849,8 @@ fun EasyTierScreen(
                                             modifier = Modifier.size(48.dp),
                                             shape = RoundedCornerShape(12.dp),
                                             colors = IconButtonDefaults.filledTonalIconButtonColors(
-                                                containerColor = Color(0xFFE0F2FE),
-                                                contentColor = Color(0xFF0369A1)
+                                                containerColor = AppTheme.colors.statusInfoBg,
+                                                contentColor = AppTheme.colors.statusInfoText
                                             )
                                         ) {
                                             Icon(Icons.Default.Add, contentDescription = "添加对端")
@@ -855,8 +862,8 @@ fun EasyTierScreen(
                             NetworkingMethod.STANDALONE -> {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFF8FAFC),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                    color = AppTheme.colors.surfaceVariant,
+                                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Row(
@@ -866,14 +873,14 @@ fun EasyTierScreen(
                                         Icon(
                                             imageVector = Icons.Default.Info,
                                             contentDescription = null,
-                                            tint = Color(0xFF0284C7),
+                                            tint = AppTheme.colors.statusInfoText,
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = "独立节点模式不会主动连接外部对端，仅监听本地端口等待其他节点连入。",
                                             fontSize = 12.sp,
-                                            color = Color(0xFF475569)
+                                            color = AppTheme.colors.textSecondary
                                         )
                                     }
                                 }
@@ -886,9 +893,9 @@ fun EasyTierScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -904,13 +911,13 @@ fun EasyTierScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFFEDE9FE)),
+                                        .background(AppTheme.colors.statusPurpleBg),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Tune,
                                         contentDescription = null,
-                                        tint = Color(0xFF6D28D9),
+                                        tint = AppTheme.colors.statusPurpleText,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -920,7 +927,7 @@ fun EasyTierScreen(
                                         text = "高级设置",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                     Text(
                                         text = buildString {
@@ -933,7 +940,7 @@ fun EasyTierScreen(
                                             }
                                         },
                                         fontSize = 12.sp,
-                                        color = Color(0xFF64748B)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                 }
                             }
@@ -941,7 +948,7 @@ fun EasyTierScreen(
                             Icon(
                                 imageVector = if (advancedExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = "展开高级设置",
-                                tint = Color(0xFF64748B)
+                                tint = AppTheme.colors.textSecondary
                             )
                         }
 
@@ -952,13 +959,13 @@ fun EasyTierScreen(
                                     .padding(start = 18.dp, end = 18.dp, bottom = 18.dp),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                HorizontalDivider(color = AppTheme.colors.divider)
 
                                 // Dual-Core Bridge Section (Mihomo + EasyTier)
                                 Surface(
                                     shape = RoundedCornerShape(14.dp),
-                                    color = Color(0xFFF0F9FF),
-                                    border = BorderStroke(1.dp, Color(0xFFBAE6FD)),
+                                    color = AppTheme.colors.surfaceVariant,
+                                    border = BorderStroke(1.dp, AppTheme.colors.tabSelectedBg),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(
@@ -969,7 +976,7 @@ fun EasyTierScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Hub,
                                                 contentDescription = null,
-                                                tint = Color(0xFF0369A1),
+                                                tint = AppTheme.colors.statusInfoText,
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
@@ -977,7 +984,7 @@ fun EasyTierScreen(
                                                 text = "MihoTier 双核无冲突桥接设置",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF075985)
+                                                color = AppTheme.colors.statusInfoText
                                             )
                                         }
 
@@ -1005,6 +1012,7 @@ fun EasyTierScreen(
                                                 label = { Text("SOCKS5 监听端口 (本地 127.0.0.1)") },
                                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                                 singleLine = true,
+                                                colors = appTextFieldColors(),
                                                 modifier = Modifier.fillMaxWidth(),
                                                 shape = RoundedCornerShape(12.dp)
                                             )
@@ -1023,6 +1031,7 @@ fun EasyTierScreen(
                                         label = { Text("主机名 (Hostname)") },
                                         placeholder = { Text("MihoTier-Node") },
                                         singleLine = true,
+                                        colors = appTextFieldColors(),
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -1035,6 +1044,7 @@ fun EasyTierScreen(
                                         label = { Text("MTU") },
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                         singleLine = true,
+                                        colors = appTextFieldColors(),
                                         modifier = Modifier.width(105.dp),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -1046,7 +1056,7 @@ fun EasyTierScreen(
                                         text = "默认连接协议 (Default Protocol)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF475569)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                     Row(
                                         modifier = Modifier
@@ -1061,8 +1071,10 @@ fun EasyTierScreen(
                                                 onClick = { updateCurrent { it.copy(defaultProtocol = proto) } },
                                                 label = { Text(proto.uppercase(), fontWeight = FontWeight.SemiBold) },
                                                 colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = Color(0xFFBAE6FD),
-                                                    selectedLabelColor = Color(0xFF075985)
+                                                    selectedContainerColor = AppTheme.colors.tabSelectedBg,
+                                                    selectedLabelColor = AppTheme.colors.tabSelectedText,
+                                                    containerColor = AppTheme.colors.surfaceVariant,
+                                                    labelColor = AppTheme.colors.textSecondary
                                                 )
                                             )
                                         }
@@ -1075,13 +1087,13 @@ fun EasyTierScreen(
                                         text = "子网代理 (Proxy Network CIDRs)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF475569)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                     currentProfile.proxyCidrs.forEach { cidr ->
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = Color(0xFFF8FAFC),
-                                            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                                            color = AppTheme.colors.surfaceVariant,
+                                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder)
                                         ) {
                                             Row(
                                                 modifier = Modifier
@@ -1094,7 +1106,7 @@ fun EasyTierScreen(
                                                     text = cidr,
                                                     fontSize = 13.sp,
                                                     fontFamily = FontFamily.Monospace,
-                                                    color = Color(0xFF1E293B)
+                                                    color = AppTheme.colors.textPrimary
                                                 )
                                                 IconButton(
                                                     onClick = {
@@ -1107,7 +1119,7 @@ fun EasyTierScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.Close,
                                                         contentDescription = "删除子网",
-                                                        tint = Color(0xFF64748B),
+                                                        tint = AppTheme.colors.textSecondary,
                                                         modifier = Modifier.size(16.dp)
                                                     )
                                                 }
@@ -1125,6 +1137,7 @@ fun EasyTierScreen(
                                             label = { Text("添加暴露子网 CIDR") },
                                             placeholder = { Text("例如: 192.168.1.0/24") },
                                             singleLine = true,
+                                            colors = appTextFieldColors(),
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp)
                                         )
@@ -1137,7 +1150,11 @@ fun EasyTierScreen(
                                                 }
                                             },
                                             modifier = Modifier.size(48.dp),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                                containerColor = AppTheme.colors.statusInfoBg,
+                                                contentColor = AppTheme.colors.statusInfoText
+                                            )
                                         ) {
                                             Icon(Icons.Default.Add, contentDescription = "添加子网")
                                         }
@@ -1150,13 +1167,13 @@ fun EasyTierScreen(
                                         text = "监听地址列表 (Listeners)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF475569)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                     currentProfile.listenerUrls.forEach { listener ->
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = Color(0xFFF8FAFC),
-                                            border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                                            color = AppTheme.colors.surfaceVariant,
+                                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder)
                                         ) {
                                             Row(
                                                 modifier = Modifier
@@ -1169,7 +1186,7 @@ fun EasyTierScreen(
                                                     text = listener,
                                                     fontSize = 13.sp,
                                                     fontFamily = FontFamily.Monospace,
-                                                    color = Color(0xFF1E293B)
+                                                    color = AppTheme.colors.textPrimary
                                                 )
                                                 IconButton(
                                                     onClick = {
@@ -1182,7 +1199,7 @@ fun EasyTierScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.Close,
                                                         contentDescription = "删除监听地址",
-                                                        tint = Color(0xFF64748B),
+                                                        tint = AppTheme.colors.textSecondary,
                                                         modifier = Modifier.size(16.dp)
                                                     )
                                                 }
@@ -1200,6 +1217,7 @@ fun EasyTierScreen(
                                             label = { Text("添加本地监听地址") },
                                             placeholder = { Text("例如: tcp://0.0.0.0:0") },
                                             singleLine = true,
+                                            colors = appTextFieldColors(),
                                             modifier = Modifier.weight(1f),
                                             shape = RoundedCornerShape(12.dp)
                                         )
@@ -1212,14 +1230,18 @@ fun EasyTierScreen(
                                                 }
                                             },
                                             modifier = Modifier.size(48.dp),
-                                            shape = RoundedCornerShape(12.dp)
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                                containerColor = AppTheme.colors.statusInfoBg,
+                                                contentColor = AppTheme.colors.statusInfoText
+                                            )
                                         ) {
                                             Icon(Icons.Default.Add, contentDescription = "添加监听")
                                         }
                                     }
                                 }
 
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                HorizontalDivider(color = AppTheme.colors.divider)
 
                                 // Feature Flags Switches
                                 EasyTierSwitchItem(
@@ -1291,9 +1313,9 @@ fun EasyTierScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -1309,13 +1331,13 @@ fun EasyTierScreen(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFFFEF3C7)),
+                                        .background(AppTheme.colors.statusWarningBg),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.SwapHoriz,
                                         contentDescription = null,
-                                        tint = Color(0xFFD97706),
+                                        tint = AppTheme.colors.statusWarningText,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -1325,7 +1347,7 @@ fun EasyTierScreen(
                                         text = "端口转发",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                     Text(
                                         text = if (currentProfile.portForwards.isEmpty()) {
@@ -1334,7 +1356,7 @@ fun EasyTierScreen(
                                             "已配置 ${currentProfile.portForwards.size} 条端口映射规则"
                                         },
                                         fontSize = 12.sp,
-                                        color = Color(0xFF64748B)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                 }
                             }
@@ -1342,7 +1364,7 @@ fun EasyTierScreen(
                             Icon(
                                 imageVector = if (portForwardExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                                 contentDescription = "展开端口转发",
-                                tint = Color(0xFF64748B)
+                                tint = AppTheme.colors.textSecondary
                             )
                         }
 
@@ -1353,13 +1375,13 @@ fun EasyTierScreen(
                                     .padding(start = 18.dp, end = 18.dp, bottom = 18.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                HorizontalDivider(color = AppTheme.colors.divider)
 
                                 currentProfile.portForwards.forEachIndexed { idx, pf ->
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
-                                        color = Color(0xFFF8FAFC),
-                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                        color = AppTheme.colors.surfaceVariant,
+                                        border = BorderStroke(1.dp, AppTheme.colors.innerBorder)
                                     ) {
                                         Row(
                                             modifier = Modifier
@@ -1373,14 +1395,14 @@ fun EasyTierScreen(
                                                 modifier = Modifier.weight(1f)
                                             ) {
                                                 Surface(
-                                                    color = Color(0xFFE0F2FE),
+                                                    color = AppTheme.colors.statusInfoBg,
                                                     shape = RoundedCornerShape(6.dp)
                                                 ) {
                                                     Text(
                                                         text = pf.proto.uppercase(),
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF0369A1),
+                                                        color = AppTheme.colors.statusInfoText,
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                     )
                                                 }
@@ -1389,7 +1411,7 @@ fun EasyTierScreen(
                                                     text = "${pf.bindAddr} ➔ ${pf.dstAddr}",
                                                     fontSize = 13.sp,
                                                     fontFamily = FontFamily.Monospace,
-                                                    color = Color(0xFF1E293B),
+                                                    color = AppTheme.colors.textPrimary,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
@@ -1407,7 +1429,7 @@ fun EasyTierScreen(
                                                 Icon(
                                                     imageVector = Icons.Default.DeleteOutline,
                                                     contentDescription = "删除规则",
-                                                    tint = Color(0xFFEF4444),
+                                                    tint = AppTheme.colors.statusDangerText,
                                                     modifier = Modifier.size(18.dp)
                                                 )
                                             }
@@ -1419,18 +1441,18 @@ fun EasyTierScreen(
                                     onClick = { showAddPortForwardDialog = true },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFBAE6FD))
+                                    border = BorderStroke(1.dp, AppTheme.colors.tabSelectedBg)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = null,
-                                        tint = Color(0xFF0284C7),
+                                        tint = AppTheme.colors.statusInfoText,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "添加端口转发规则",
-                                        color = Color(0xFF0284C7),
+                                        color = AppTheme.colors.statusInfoText,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
@@ -1454,7 +1476,7 @@ fun EasyTierScreen(
                         .height(54.dp),
                     shape = RoundedCornerShape(27.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isCurrentProfileRunning) Color(0xFFDC2626) else Color(0xFF104179)
+                        containerColor = if (isCurrentProfileRunning) AppTheme.colors.statusDangerText else AppTheme.colors.brandPrimary
                     )
                 ) {
                     Icon(
@@ -1504,6 +1526,7 @@ fun EasyTierScreen(
                     onValueChange = { nameInput = it },
                     label = { Text("实例名称 (Instance Name)") },
                     singleLine = true,
+                    colors = appTextFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -1514,7 +1537,7 @@ fun EasyTierScreen(
                         EasyTierRepository.createProfile(context, nameInput)
                         showCreateProfileDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF104179))
+                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
                 ) {
                     Text("创建")
                 }
@@ -1539,6 +1562,7 @@ fun EasyTierScreen(
                     onValueChange = { nameInput = it },
                     label = { Text("实例名称 (Instance Name)") },
                     singleLine = true,
+                    colors = appTextFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
@@ -1551,7 +1575,7 @@ fun EasyTierScreen(
                         }
                         showRenameProfileDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF104179))
+                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
                 ) {
                     Text("保存")
                 }
@@ -1579,7 +1603,7 @@ fun EasyTierScreen(
                         showDeleteConfirmDialog = false
                         Toast.makeText(context, "已删除组网配置", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.statusDangerText)
                 ) {
                     Text("删除")
                 }
@@ -1608,7 +1632,13 @@ fun EasyTierScreen(
                             FilterChip(
                                 selected = proto == p,
                                 onClick = { proto = p },
-                                label = { Text(p.uppercase(), fontWeight = FontWeight.Bold) }
+                                label = { Text(p.uppercase(), fontWeight = FontWeight.Bold) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AppTheme.colors.tabSelectedBg,
+                                    selectedLabelColor = AppTheme.colors.tabSelectedText,
+                                    containerColor = AppTheme.colors.surfaceVariant,
+                                    labelColor = AppTheme.colors.textSecondary
+                                )
                             )
                         }
                     }
@@ -1618,6 +1648,7 @@ fun EasyTierScreen(
                         label = { Text("本地监听地址 (bind_addr)") },
                         placeholder = { Text("0.0.0.0:8080") },
                         singleLine = true,
+                        colors = appTextFieldColors(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -1627,6 +1658,7 @@ fun EasyTierScreen(
                         label = { Text("目标内网地址 (dst_addr)") },
                         placeholder = { Text("10.144.144.2:80") },
                         singleLine = true,
+                        colors = appTextFieldColors(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -1650,7 +1682,7 @@ fun EasyTierScreen(
                             Toast.makeText(context, "请填写完整的 IP:端口 格式", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF104179))
+                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
                 ) {
                     Text("添加")
                 }
@@ -1703,7 +1735,7 @@ fun EasyTierScreen(
                     Icon(
                         imageVector = Icons.Default.Hub,
                         contentDescription = null,
-                        tint = Color(0xFF0284C7)
+                        tint = AppTheme.colors.statusInfoText
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("MihoTier 双核无冲突联动说明", fontWeight = FontWeight.Bold, fontSize = 17.sp)
@@ -1714,23 +1746,23 @@ fun EasyTierScreen(
                     Text(
                         text = "Android 系统同一时间仅允许建立一张 VpnService 虚拟网卡。MihoTier 通过以下架构实现 Mihomo 与 EasyTier 同时在线：",
                         fontSize = 13.sp,
-                        color = Color(0xFF334155)
+                        color = AppTheme.colors.textSecondary
                     )
                     Text(
                         text = "1. EasyTier 开启 No-TUN (用户态协议栈) 并在本地监听 SOCKS5 端口 (127.0.0.1:$socksPort)。\n2. Mihomo 接管系统 TUN 并通过 IP-CIDR 规则将虚拟内网网段 (如 10.144.144.0/24) 自动分流至 EasyTier SOCKS5 网关。",
                         fontSize = 12.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFF0F172A),
+                        color = AppTheme.colors.terminalBg,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = sampleYaml,
                             fontFamily = FontFamily.Monospace,
                             fontSize = 11.sp,
-                            color = Color(0xFFE2E8F0),
+                            color = AppTheme.colors.terminalText,
                             modifier = Modifier.padding(12.dp)
                         )
                     }
@@ -1744,7 +1776,7 @@ fun EasyTierScreen(
                         Toast.makeText(context, "已复制 Mihomo 分流配置片段", Toast.LENGTH_SHORT).show()
                         showDualCoreGuideDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF104179))
+                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
                 ) {
                     Text("复制 YAML 片段")
                 }
@@ -1771,11 +1803,11 @@ private fun EasyTierRunningTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             border = BorderStroke(
                 1.dp,
-                if (runtimeState.isRunning) Color(0xFF6EE7B7) else Color(0xFFE2E8F0)
+                if (runtimeState.isRunning) AppTheme.colors.statusSuccessBorder else AppTheme.colors.cardBorder
             )
         ) {
             Column(
@@ -1795,14 +1827,14 @@ private fun EasyTierRunningTab(
                                 .size(40.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(
-                                    if (runtimeState.isRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
+                                    if (runtimeState.isRunning) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Router,
                                 contentDescription = null,
-                                tint = if (runtimeState.isRunning) Color(0xFF059669) else Color(0xFF64748B),
+                                tint = if (runtimeState.isRunning) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -1812,7 +1844,7 @@ private fun EasyTierRunningTab(
                                 text = if (runtimeState.isRunning) "本机节点运行中" else "组网未启动",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = AppTheme.colors.textPrimary
                             )
                             Text(
                                 text = if (runtimeState.isRunning) {
@@ -1821,7 +1853,7 @@ private fun EasyTierRunningTab(
                                     "点击下方按钮启动当前选中的组网实例"
                                 },
                                 fontSize = 12.sp,
-                                color = Color(0xFF64748B)
+                                color = AppTheme.colors.textSecondary
                             )
                         }
                     }
@@ -1830,19 +1862,20 @@ private fun EasyTierRunningTab(
                         onClick = { if (runtimeState.isRunning) onStopNetwork() else onStartNetwork() },
                         shape = RoundedCornerShape(999.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (runtimeState.isRunning) Color(0xFFDC2626) else Color(0xFF104179)
+                            containerColor = if (runtimeState.isRunning) Color(0xFFDC2626) else AppTheme.colors.brandPrimary
                         ),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                     ) {
                         Text(
                             text = if (runtimeState.isRunning) "停止" else "启动",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
                 }
 
-                HorizontalDivider(color = Color(0xFFF1F5F9))
+                HorizontalDivider(color = AppTheme.colors.divider)
 
                 // 2x2 Grid of Local Node Metrics
                 Row(
@@ -1902,9 +1935,9 @@ private fun EasyTierRunningTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
         ) {
             Column(
                 modifier = Modifier
@@ -1921,17 +1954,17 @@ private fun EasyTierRunningTab(
                         text = "对端节点 (Peers)",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                     Surface(
-                        color = Color(0xFFE0F2FE),
+                        color = AppTheme.colors.statusInfoBg,
                         shape = RoundedCornerShape(999.dp)
                     ) {
                         Text(
                             text = "${runtimeState.peers.size} 个连接",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0369A1),
+                            color = AppTheme.colors.statusInfoText,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
@@ -1941,15 +1974,15 @@ private fun EasyTierRunningTab(
                     Text(
                         text = if (runtimeState.isRunning) "独立节点模式或正在探测对端节点..." else "启动组网后在此查看已连接的对端节点详情",
                         fontSize = 13.sp,
-                        color = Color(0xFF94A3B8),
+                        color = AppTheme.colors.textMuted,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 } else {
                     runtimeState.peers.forEach { peer ->
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            color = AppTheme.colors.surfaceVariant,
+                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
@@ -1965,33 +1998,33 @@ private fun EasyTierRunningTab(
                                         text = peer.hostname,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A),
+                                        color = AppTheme.colors.textPrimary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         modifier = Modifier.weight(1f)
                                     )
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Surface(
-                                            color = Color(0xFFE0F2FE),
+                                            color = AppTheme.colors.statusInfoBg,
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Text(
                                                 text = peer.tunnelProto,
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF0369A1),
+                                                color = AppTheme.colors.statusInfoText,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
                                         Surface(
-                                            color = Color(0xFFD1FAE5),
+                                            color = AppTheme.colors.statusSuccessBg,
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Text(
                                                 text = "${peer.latencyMs} ms",
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF065F46),
+                                                color = AppTheme.colors.statusSuccessText,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -2006,13 +2039,13 @@ private fun EasyTierRunningTab(
                                         text = "虚拟 IP: ${peer.virtualIpv4}",
                                         fontSize = 12.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        color = Color(0xFF475569)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                     Text(
                                         text = "↓ ${peer.rxBytes}  ↑ ${peer.txBytes}",
                                         fontSize = 12.sp,
                                         fontFamily = FontFamily.Monospace,
-                                        color = Color(0xFF64748B)
+                                        color = AppTheme.colors.textMuted
                                     )
                                 }
                             }
@@ -2026,9 +2059,9 @@ private fun EasyTierRunningTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
         ) {
             Column(
                 modifier = Modifier
@@ -2040,12 +2073,13 @@ private fun EasyTierRunningTab(
                     text = "实例事件日志 (Events)",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
+                    color = AppTheme.colors.textPrimary
                 )
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF0F172A),
+                    color = AppTheme.colors.terminalBg,
+                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -2057,7 +2091,7 @@ private fun EasyTierRunningTab(
                                 text = "暂无事件日志...",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF94A3B8)
+                                color = AppTheme.colors.textMuted
                             )
                         } else {
                             runtimeState.eventLogs.forEach { logLine ->
@@ -2065,7 +2099,7 @@ private fun EasyTierRunningTab(
                                     text = logLine,
                                     fontSize = 11.sp,
                                     fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFFE2E8F0),
+                                    color = AppTheme.colors.terminalText,
                                     lineHeight = 16.sp
                                 )
                             }
@@ -2089,14 +2123,14 @@ private fun StatusMetricTile(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = if (highlight) Color(0xFFF0FDF4) else Color(0xFFF8FAFC),
-        border = BorderStroke(1.dp, if (highlight) Color(0xFFBBF7D0) else Color(0xFFE2E8F0))
+        color = if (highlight) AppTheme.colors.statusSuccessBg.copy(alpha = if (AppTheme.colors.isDark) 0.35f else 0.8f) else AppTheme.colors.surfaceVariant,
+        border = BorderStroke(1.dp, if (highlight) AppTheme.colors.statusSuccessBorder else AppTheme.colors.innerBorder)
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = label,
                 fontSize = 11.sp,
-                color = Color(0xFF64748B)
+                color = AppTheme.colors.textSecondary
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
@@ -2104,7 +2138,7 @@ private fun StatusMetricTile(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Monospace,
-                color = if (highlight) Color(0xFF065F46) else Color(0xFF0F172A),
+                color = if (highlight) AppTheme.colors.statusSuccessText else AppTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -2132,12 +2166,12 @@ private fun EasyTierSwitchItem(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Text(
                 text = subtitle,
                 fontSize = 12.sp,
-                color = Color(0xFF64748B)
+                color = AppTheme.colors.textSecondary
             )
         }
         Switch(
@@ -2145,7 +2179,7 @@ private fun EasyTierSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF104179)
+                checkedTrackColor = AppTheme.colors.brandPrimary
             )
         )
     }
@@ -2178,14 +2212,23 @@ private fun EasyTierTomlEditorDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("EasyTier TOML 配置文件", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(
+                    "EasyTier TOML 配置文件",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    color = AppTheme.colors.textPrimary
+                )
                 TextButton(
                     onClick = {
                         val err = EasyTierRepository.validateToml(tomlText)
                         validationResult = if (err.isBlank()) "✓ Rust easytier-core 语法校验通过！" else err
                     }
                 ) {
-                    Text("校验语法", fontWeight = FontWeight.Bold)
+                    Text(
+                        "校验语法",
+                        fontWeight = FontWeight.Bold,
+                        color = AppTheme.colors.brandPrimary
+                    )
                 }
             }
         },
@@ -2206,12 +2249,12 @@ private fun EasyTierTomlEditorDialog(
                             text = "使用自定义 TOML 覆盖表单",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
                         Text(
                             text = "开启后直接以文本内容启动 EasyTier",
                             fontSize = 11.sp,
-                            color = Color(0xFF64748B)
+                            color = AppTheme.colors.textSecondary
                         )
                     }
                     Switch(
@@ -2221,7 +2264,11 @@ private fun EasyTierTomlEditorDialog(
                             if (!it) {
                                 tomlText = generatedToml
                             }
-                        }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AppTheme.colors.brandPrimary
+                        )
                     )
                 }
 
@@ -2229,14 +2276,15 @@ private fun EasyTierTomlEditorDialog(
                     val isOk = msg.startsWith("✓")
                     Surface(
                         shape = RoundedCornerShape(10.dp),
-                        color = if (isOk) Color(0xFFD1FAE5) else Color(0xFFFEE2E2),
+                        color = if (isOk) AppTheme.colors.statusSuccessBg else AppTheme.colors.statusDangerBg,
+                        border = BorderStroke(1.dp, if (isOk) AppTheme.colors.statusSuccessBorder else AppTheme.colors.innerBorder),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = msg,
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = if (isOk) Color(0xFF065F46) else Color(0xFF991B1B),
+                            color = if (isOk) AppTheme.colors.statusSuccessText else AppTheme.colors.statusDangerText,
                             modifier = Modifier.padding(10.dp)
                         )
                     }
@@ -2251,8 +2299,10 @@ private fun EasyTierTomlEditorDialog(
                     },
                     textStyle = LocalTextStyle.current.copy(
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        color = AppTheme.colors.textPrimary
                     ),
+                    colors = appTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 260.dp, max = 380.dp),
@@ -2271,7 +2321,7 @@ private fun EasyTierTomlEditorDialog(
                         onSave(useCustom, tomlText)
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF104179))
+                colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
             ) {
                 Text("保存配置")
             }

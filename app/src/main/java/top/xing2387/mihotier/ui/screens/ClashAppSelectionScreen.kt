@@ -81,6 +81,7 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.xing2387.mihotier.core.config.NetworkSettingsRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
 
 data class AppItem(
     val packageName: String,
@@ -137,7 +138,7 @@ private fun AppIcon(
     } else {
         Box(
             modifier = modifier
-                .background(Color(0xFFE2E8F0), shape = RoundedCornerShape(10.dp))
+                .background(AppTheme.colors.surfaceVariant, shape = RoundedCornerShape(10.dp))
         )
     }
 }
@@ -150,6 +151,7 @@ fun ClashAppSelectionScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val colors = AppTheme.colors
     val packageManager = remember { context.packageManager }
 
     var allApps by remember { mutableStateOf<List<AppItem>>(emptyList()) }
@@ -265,12 +267,12 @@ fun ClashAppSelectionScreen(
                             text = "分应用代理 (Access Control)",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = colors.textPrimary
                         )
                         Text(
                             text = "已选 ${selectedPackages.size} 项 / 共 ${displayedApps.size} 个应用",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = colors.textMuted
                         )
                     }
                 },
@@ -279,7 +281,7 @@ fun ClashAppSelectionScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = colors.textPrimary
                         )
                     }
                 },
@@ -288,7 +290,7 @@ fun ClashAppSelectionScreen(
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save",
-                            tint = if (hasChanges) Color(0xFF1D68BD) else Color(0xFF0F172A)
+                            tint = if (hasChanges) colors.brandPrimary else colors.textSecondary
                         )
                     }
                     Box {
@@ -296,23 +298,23 @@ fun ClashAppSelectionScreen(
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "More",
-                                tint = Color(0xFF0F172A)
+                                tint = colors.textPrimary
                             )
                         }
 
-                        // More dropdown menu (White rounded card style)
+                        // More dropdown menu
                         DropdownMenu(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false },
                             shape = RoundedCornerShape(16.dp),
-                            containerColor = Color.White
+                            containerColor = colors.cardBackground
                         ) {
                             DropdownMenuItem(
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.DoneAll,
                                         contentDescription = null,
-                                        tint = Color(0xFF0F172A),
+                                        tint = colors.textPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 },
@@ -320,7 +322,7 @@ fun ClashAppSelectionScreen(
                                     Text(
                                         text = "全选当前列表 (Select All)",
                                         fontSize = 14.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = colors.textPrimary
                                     )
                                 },
                                 onClick = {
@@ -334,7 +336,7 @@ fun ClashAppSelectionScreen(
                                     Icon(
                                         imageVector = Icons.Default.ClearAll,
                                         contentDescription = null,
-                                        tint = Color(0xFF0F172A),
+                                        tint = colors.textPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 },
@@ -342,7 +344,7 @@ fun ClashAppSelectionScreen(
                                     Text(
                                         text = "清空当前列表 (Clear All)",
                                         fontSize = 14.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = colors.textPrimary
                                     )
                                 },
                                 onClick = {
@@ -356,7 +358,7 @@ fun ClashAppSelectionScreen(
                                     Icon(
                                         imageVector = Icons.Default.SwapHoriz,
                                         contentDescription = null,
-                                        tint = Color(0xFF0F172A),
+                                        tint = colors.textPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 },
@@ -364,7 +366,7 @@ fun ClashAppSelectionScreen(
                                     Text(
                                         text = "反选当前列表 (Invert)",
                                         fontSize = 14.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = colors.textPrimary
                                     )
                                 },
                                 onClick = {
@@ -381,15 +383,15 @@ fun ClashAppSelectionScreen(
                                     showMoreMenu = false
                                 }
                             )
-                            HorizontalDivider(color = Color(0xFFF1F5F9))
+                            HorizontalDivider(color = colors.innerBorder)
                             DropdownMenuItem(
                                 leadingIcon = {
                                     Checkbox(
                                         checked = filterSystemApps,
                                         onCheckedChange = null,
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xFF1D68BD),
-                                            uncheckedColor = Color(0xFF64748B)
+                                            checkedColor = colors.brandPrimary,
+                                            uncheckedColor = colors.textMuted
                                         )
                                     )
                                 },
@@ -397,7 +399,7 @@ fun ClashAppSelectionScreen(
                                     Text(
                                         text = "隐藏系统应用 (Filter System)",
                                         fontSize = 14.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = colors.textPrimary
                                     )
                                 },
                                 onClick = {
@@ -410,7 +412,7 @@ fun ClashAppSelectionScreen(
                                     Icon(
                                         imageVector = Icons.Default.Sort,
                                         contentDescription = null,
-                                        tint = Color(0xFF0F172A),
+                                        tint = colors.textPrimary,
                                         modifier = Modifier.size(20.dp)
                                     )
                                 },
@@ -423,7 +425,7 @@ fun ClashAppSelectionScreen(
                                         Text(
                                             text = "排序方式",
                                             fontSize = 14.sp,
-                                            color = Color(0xFF0F172A)
+                                            color = colors.textPrimary
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                         val arrow = if (isAscending) "↑" else "↓"
@@ -431,7 +433,7 @@ fun ClashAppSelectionScreen(
                                             text = "${sortField.label} $arrow",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0369A1)
+                                            color = colors.brandPrimary
                                         )
                                     }
                                 },
@@ -442,12 +444,12 @@ fun ClashAppSelectionScreen(
                             )
                         }
 
-                        // Sort sub-menu (White rounded card style)
+                        // Sort sub-menu
                         DropdownMenu(
                             expanded = showSortMenu,
                             onDismissRequest = { showSortMenu = false },
                             shape = RoundedCornerShape(16.dp),
-                            containerColor = Color.White
+                            containerColor = colors.cardBackground
                         ) {
                             DropdownMenuItem(
                                 text = {
@@ -455,14 +457,14 @@ fun ClashAppSelectionScreen(
                                         text = if (isAscending) "当前: 升序排列 (点击切换降序 ↑)" else "当前: 降序排列 (点击切换升序 ↓)",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0369A1)
+                                        color = colors.brandPrimary
                                     )
                                 },
                                 onClick = {
                                     isAscending = !isAscending
                                 }
                             )
-                            HorizontalDivider(color = Color(0xFFF1F5F9))
+                            HorizontalDivider(color = colors.innerBorder)
                             listOf(
                                 AppSortField.APP_NAME to "应用名称 (App Name)",
                                 AppSortField.PACKAGE_NAME to "应用包名 (Package Name)",
@@ -480,7 +482,7 @@ fun ClashAppSelectionScreen(
                                                 text = label,
                                                 fontSize = 14.sp,
                                                 fontWeight = if (sortField == field) FontWeight.SemiBold else FontWeight.Normal,
-                                                color = if (sortField == field) Color(0xFF0369A1) else Color(0xFF0F172A)
+                                                color = if (sortField == field) colors.brandPrimary else colors.textPrimary
                                             )
                                             if (sortField == field) {
                                                 Spacer(modifier = Modifier.width(8.dp))
@@ -488,7 +490,7 @@ fun ClashAppSelectionScreen(
                                                     imageVector = Icons.Default.Check,
                                                     contentDescription = "Selected",
                                                     modifier = Modifier.size(18.dp),
-                                                    tint = Color(0xFF0369A1)
+                                                    tint = colors.brandPrimary
                                                 )
                                             }
                                         }
@@ -503,11 +505,11 @@ fun ClashAppSelectionScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -527,8 +529,8 @@ fun ClashAppSelectionScreen(
                         .weight(1f)
                         .height(38.dp),
                     shape = RoundedCornerShape(19.dp),
-                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                    color = Color.White
+                    border = BorderStroke(1.dp, colors.cardBorder),
+                    color = colors.cardBackground
                 ) {
                     Row(
                         modifier = Modifier
@@ -539,7 +541,7 @@ fun ClashAppSelectionScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color(0xFF64748B),
+                            tint = colors.textMuted,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -548,7 +550,7 @@ fun ClashAppSelectionScreen(
                                 Text(
                                     text = "搜索应用名称或包名...",
                                     fontSize = 13.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = colors.textMuted
                                 )
                             }
                             BasicTextField(
@@ -557,9 +559,9 @@ fun ClashAppSelectionScreen(
                                 singleLine = true,
                                 textStyle = TextStyle(
                                     fontSize = 13.sp,
-                                    color = Color(0xFF0F172A)
+                                    color = colors.textPrimary
                                 ),
-                                cursorBrush = SolidColor(Color(0xFF1D68BD)),
+                                cursorBrush = SolidColor(colors.brandPrimary),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -567,7 +569,7 @@ fun ClashAppSelectionScreen(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Clear Search",
-                                tint = Color(0xFF64748B),
+                                tint = colors.textMuted,
                                 modifier = Modifier
                                     .size(16.dp)
                                     .clickable { searchQuery = "" }
@@ -584,7 +586,7 @@ fun ClashAppSelectionScreen(
                         text = "隐藏系统",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF334155)
+                        color = colors.textSecondary
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Switch(
@@ -592,10 +594,10 @@ fun ClashAppSelectionScreen(
                         onCheckedChange = { filterSystemApps = it },
                         modifier = Modifier.scale(0.8f),
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFF1D68BD),
-                            uncheckedThumbColor = Color.White,
-                            uncheckedTrackColor = Color(0xFFCBD5E1)
+                            checkedThumbColor = colors.cardBackground,
+                            checkedTrackColor = colors.brandPrimary,
+                            uncheckedThumbColor = colors.cardBackground,
+                            uncheckedTrackColor = colors.innerBorder
                         )
                     )
                 }
@@ -612,7 +614,7 @@ fun ClashAppSelectionScreen(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF1D68BD)
+                        color = colors.brandPrimary
                     )
                 } else if (displayedApps.isEmpty()) {
                     Box(
@@ -622,7 +624,7 @@ fun ClashAppSelectionScreen(
                         Text(
                             text = if (searchQuery.isNotBlank()) "未找到匹配的应用" else "暂无可用应用",
                             fontSize = 15.sp,
-                            color = Color(0xFF64748B)
+                            color = colors.textMuted
                         )
                     }
                 } else {
@@ -647,10 +649,10 @@ fun ClashAppSelectionScreen(
                                     .height(74.dp)
                                     .clickable { toggleApp() },
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = colors.cardBackground),
                                 border = BorderStroke(
                                     width = if (isSelected) 1.5.dp else 1.dp,
-                                    color = if (isSelected) Color(0xFF5B8DEF) else Color(0xFFE2E8F0)
+                                    color = if (isSelected) colors.brandPrimary else colors.cardBorder
                                 ),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
@@ -682,7 +684,7 @@ fun ClashAppSelectionScreen(
                                                 text = app.name,
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF0F172A),
+                                                color = colors.textPrimary,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f, fill = false)
@@ -691,13 +693,13 @@ fun ClashAppSelectionScreen(
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Surface(
                                                     shape = RoundedCornerShape(6.dp),
-                                                    color = Color(0xFFBAE6FD)
+                                                    color = colors.statusInfoBg
                                                 ) {
                                                     Text(
                                                         text = "系统",
                                                         fontSize = 10.sp,
                                                         fontWeight = FontWeight.SemiBold,
-                                                        color = Color(0xFF0369A1),
+                                                        color = colors.statusInfoText,
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                                     )
                                                 }
@@ -707,7 +709,7 @@ fun ClashAppSelectionScreen(
                                         Text(
                                             text = app.packageName,
                                             fontSize = 12.sp,
-                                            color = Color(0xFF64748B),
+                                            color = colors.textMuted,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
@@ -717,8 +719,8 @@ fun ClashAppSelectionScreen(
                                         checked = isSelected,
                                         onCheckedChange = { toggleApp() },
                                         colors = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xFF1D68BD),
-                                            uncheckedColor = Color(0xFF94A3B8),
+                                            checkedColor = colors.brandPrimary,
+                                            uncheckedColor = colors.textMuted,
                                             checkmarkColor = Color.White
                                         )
                                     )
@@ -734,21 +736,21 @@ fun ClashAppSelectionScreen(
         if (showUnsavedDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedDialog = false },
-                containerColor = Color.White,
+                containerColor = colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "未保存的修改",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "当前分应用代理列表有未保存的更改，是否在离开前保存？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -757,19 +759,19 @@ fun ClashAppSelectionScreen(
                         doSave()
                         onNavigateBack()
                     }) {
-                        Text("保存并退出", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("保存并退出", color = colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     Row {
                         TextButton(onClick = { showUnsavedDialog = false }) {
-                            Text("取消", color = Color(0xFF64748B))
+                            Text("取消", color = colors.textMuted)
                         }
                         TextButton(onClick = {
                             showUnsavedDialog = false
                             onNavigateBack()
                         }) {
-                            Text("不保存", color = Color(0xFFDC2626))
+                            Text("不保存", color = colors.statusDangerText)
                         }
                     }
                 }

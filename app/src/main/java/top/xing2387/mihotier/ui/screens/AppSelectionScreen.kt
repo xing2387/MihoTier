@@ -78,6 +78,7 @@ import top.xing2387.mihotier.core.config.MetaFeaturesSettingsRepository
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
 import top.xing2387.mihotier.core.config.ProfileRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
+import top.xing2387.mihotier.ui.theme.AppTheme
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -271,7 +272,7 @@ fun AppSelectionScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -294,7 +295,7 @@ fun AppSelectionScreen(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF104179)),
+                            .background(AppTheme.colors.brandPrimary),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -310,12 +311,12 @@ fun AppSelectionScreen(
                             text = "MihoTier",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
                         Text(
                             text = "状态总览",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = AppTheme.colors.textSecondary
                         )
                     }
                 }
@@ -330,7 +331,7 @@ fun AppSelectionScreen(
                 }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = if (anyTunActive) Color(0xFFD1FAE5) else Color(0xFFE2E8F0)
+                    color = if (anyTunActive) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -340,14 +341,14 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(if (anyTunActive) Color(0xFF059669) else Color(0xFF94A3B8))
+                                .background(if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = tunStatusLabel,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (anyTunActive) Color(0xFF065F46) else Color(0xFF475569)
+                            color = if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary
                         )
                     }
                 }
@@ -365,8 +366,8 @@ fun AppSelectionScreen(
                 Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -375,16 +376,12 @@ fun AppSelectionScreen(
                         .padding(16.dp)
                 ) {
                     // Topology Strip:
-                    // - Only EasyTier on: Android TUN ⇄ EasyTier 组网   [Mihomo 核心 (gray)]
-                    // - Only Mihomo on:   Android TUN ⇄ Mihomo 核心     [EasyTier 组网 (gray)]
-                    // - Both on:          Android TUN ⇄ Mihomo 核心 ⇄ EasyTier 组网
-                    // - Both off:         [Android TUN (gray)]   [Mihomo 核心 (gray)]   [EasyTier 组网 (gray)]
                     val easyTierOnly = !isRunning && easyTierRuntime.isRunning
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
+                            .background(AppTheme.colors.surfaceVariant)
                             .padding(horizontal = 12.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -392,14 +389,14 @@ fun AppSelectionScreen(
                         TopologyNodeChip(
                             label = "Android TUN",
                             active = isRunning || easyTierRuntime.isRunning,
-                            activeBg = Color(0xFFBAE6FD),
-                            activeText = Color(0xFF0369A1)
+                            activeBg = AppTheme.colors.statusInfoBg,
+                            activeText = AppTheme.colors.statusInfoText
                         )
                         if (isRunning || easyTierRuntime.isRunning) {
                             Icon(
                                 imageVector = Icons.Default.SwapHoriz,
                                 contentDescription = null,
-                                tint = Color(0xFF0369A1),
+                                tint = AppTheme.colors.statusInfoText,
                                 modifier = Modifier.size(16.dp)
                             )
                         } else {
@@ -409,28 +406,28 @@ fun AppSelectionScreen(
                             TopologyNodeChip(
                                 label = "EasyTier 组网",
                                 active = true,
-                                activeBg = Color(0xFFD1FAE5),
-                                activeText = Color(0xFF065F46)
+                                activeBg = AppTheme.colors.statusSuccessBg,
+                                activeText = AppTheme.colors.statusSuccessText
                             )
                             Spacer(modifier = Modifier.size(16.dp))
                             TopologyNodeChip(
                                 label = "Mihomo 核心",
                                 active = false,
-                                activeBg = Color(0xFFD1FAE5),
-                                activeText = Color(0xFF065F46)
+                                activeBg = AppTheme.colors.statusSuccessBg,
+                                activeText = AppTheme.colors.statusSuccessText
                             )
                         } else {
                             TopologyNodeChip(
                                 label = "Mihomo 核心",
                                 active = isRunning,
-                                activeBg = Color(0xFFD1FAE5),
-                                activeText = Color(0xFF065F46)
+                                activeBg = AppTheme.colors.statusSuccessBg,
+                                activeText = AppTheme.colors.statusSuccessText
                             )
                             if (isRunning && easyTierRuntime.isRunning) {
                                 Icon(
                                     imageVector = Icons.Default.SwapHoriz,
                                     contentDescription = null,
-                                    tint = Color(0xFF065F46),
+                                    tint = AppTheme.colors.statusSuccessText,
                                     modifier = Modifier.size(16.dp)
                                 )
                             } else {
@@ -439,8 +436,8 @@ fun AppSelectionScreen(
                             TopologyNodeChip(
                                 label = "EasyTier 组网",
                                 active = easyTierRuntime.isRunning,
-                                activeBg = Color(0xFFD1FAE5),
-                                activeText = Color(0xFF065F46)
+                                activeBg = AppTheme.colors.statusSuccessBg,
+                                activeText = AppTheme.colors.statusSuccessText
                             )
                         }
                     }
@@ -457,7 +454,7 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFFF0F9FF))
+                                .background(AppTheme.colors.statusInfoBg.copy(alpha = if (AppTheme.colors.isDark) 0.35f else 0.7f))
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -465,13 +462,13 @@ fun AppSelectionScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFBAE6FD)),
+                                    .background(AppTheme.colors.statusInfoBg),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDownward,
                                     contentDescription = "Download",
-                                    tint = Color(0xFF0369A1),
+                                    tint = AppTheme.colors.statusInfoText,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -480,14 +477,14 @@ fun AppSelectionScreen(
                                 Text(
                                     text = "累计 ${formatBytes(totalDownBytes)}",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF64748B)
+                                    color = AppTheme.colors.textSecondary
                                 )
                                 Text(
                                     text = formatSpeed(downSpeedBytes),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFF0F172A)
+                                    color = AppTheme.colors.textPrimary
                                 )
                             }
                         }
@@ -497,7 +494,7 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFFF0FDF4))
+                                .background(AppTheme.colors.statusSuccessBg.copy(alpha = if (AppTheme.colors.isDark) 0.35f else 0.7f))
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -505,13 +502,13 @@ fun AppSelectionScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFA7F3D0)),
+                                    .background(AppTheme.colors.statusSuccessBg),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ArrowUpward,
                                     contentDescription = "Upload",
-                                    tint = Color(0xFF065F46),
+                                    tint = AppTheme.colors.statusSuccessText,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -520,14 +517,14 @@ fun AppSelectionScreen(
                                 Text(
                                     text = "累计 ${formatBytes(totalUpBytes)}",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF64748B)
+                                    color = AppTheme.colors.textSecondary
                                 )
                                 Text(
                                     text = formatSpeed(upSpeedBytes),
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFF0F172A)
+                                    color = AppTheme.colors.textPrimary
                                 )
                             }
                         }
@@ -542,7 +539,7 @@ fun AppSelectionScreen(
                 text = "核心引擎控制台 (点击卡片进入详情页)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
@@ -552,10 +549,10 @@ fun AppSelectionScreen(
                     .fillMaxWidth()
                     .clickable { onNavigateToClash() },
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                 border = BorderStroke(
                     width = if (isRunning) 1.5.dp else 1.dp,
-                    color = if (isRunning) Color(0xFF5B8DEF) else Color(0xFFE2E8F0)
+                    color = if (isRunning) AppTheme.colors.brandPrimary else AppTheme.colors.cardBorder
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -573,13 +570,13 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFFBAE6FD)),
+                                .background(AppTheme.colors.statusInfoBg),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Public,
                                 contentDescription = "Mihomo",
-                                tint = Color(0xFF0369A1),
+                                tint = AppTheme.colors.statusInfoText,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -592,18 +589,18 @@ fun AppSelectionScreen(
                                     text = "Mihomo",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = AppTheme.colors.textPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (isRunning) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
+                                    color = if (isRunning) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
                                 ) {
                                     Text(
                                         text = if (isRunning) "运行中" else "已停止",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isRunning) Color(0xFF065F46) else Color(0xFF64748B),
+                                        color = if (isRunning) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp)
                                     )
                                 }
@@ -612,7 +609,7 @@ fun AppSelectionScreen(
                             Text(
                                 text = "点击进入 Mihomo 控制台",
                                 fontSize = 12.5.sp,
-                                color = Color(0xFF64748B)
+                                color = AppTheme.colors.textSecondary
                             )
                         }
 
@@ -621,9 +618,9 @@ fun AppSelectionScreen(
                             onCheckedChange = { onToggleVpn() },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF1D68BD),
+                                checkedTrackColor = AppTheme.colors.brandPrimary,
                                 uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                                uncheckedTrackColor = AppTheme.colors.innerBorder
                             )
                         )
                     }
@@ -675,7 +672,7 @@ fun AppSelectionScreen(
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Quick Shortcut Pills Row
@@ -720,10 +717,10 @@ fun AppSelectionScreen(
                         onNavigateToEasyTier()
                     },
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                 border = BorderStroke(
                     1.dp,
-                    if (easyTierRuntime.isRunning) Color(0xFF6EE7B7) else Color(0xFFE2E8F0)
+                    if (easyTierRuntime.isRunning) AppTheme.colors.statusSuccessBorder else AppTheme.colors.cardBorder
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
@@ -741,13 +738,13 @@ fun AppSelectionScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Color(0xFFA7F3D0)),
+                                .background(AppTheme.colors.statusSuccessBg),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Hub,
                                 contentDescription = "EasyTier",
-                                tint = Color(0xFF065F46),
+                                tint = AppTheme.colors.statusSuccessText,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -773,18 +770,18 @@ fun AppSelectionScreen(
                                     text = "EasyTier",
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A)
+                                    color = AppTheme.colors.textPrimary
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = if (easyTierBadgeActive) Color(0xFFD1FAE5) else Color(0xFFF1F5F9)
+                                    color = if (easyTierBadgeActive) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
                                 ) {
                                     Text(
                                         text = easyTierStatusText,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (easyTierBadgeActive) Color(0xFF065F46) else Color(0xFF64748B),
+                                        color = if (easyTierBadgeActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.5.dp)
                                     )
                                 }
@@ -797,7 +794,7 @@ fun AppSelectionScreen(
                                     "点击进入 EasyTier 控制台"
                                 },
                                 fontSize = 12.5.sp,
-                                color = Color(0xFF64748B)
+                                color = AppTheme.colors.textSecondary
                             )
                         }
 
@@ -813,7 +810,7 @@ fun AppSelectionScreen(
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(14.dp),
                                         strokeWidth = 2.dp,
-                                        color = if (easyTierDisplayChecked) Color(0xFF059669) else Color(0xFF64748B)
+                                        color = if (easyTierDisplayChecked) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted
                                     )
                                 }
                             } else {
@@ -821,9 +818,9 @@ fun AppSelectionScreen(
                             },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF059669),
+                                checkedTrackColor = AppTheme.colors.brandPrimary,
                                 uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFFCBD5E1)
+                                uncheckedTrackColor = AppTheme.colors.innerBorder
                             )
                         )
                     }
@@ -896,21 +893,21 @@ fun AppSelectionScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF8FAFC))
+                            .background(AppTheme.colors.surfaceVariant)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.AltRoute,
                             contentDescription = null,
-                            tint = Color(0xFF065F46),
+                            tint = AppTheme.colors.statusSuccessText,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "跟Mihomo同时开启时Easytier将作为其中一个节点",
                             fontSize = 11.5.sp,
-                            color = Color(0xFF64748B)
+                            color = AppTheme.colors.textSecondary
                         )
                     }
                 }
@@ -931,13 +928,13 @@ private fun TopologyNodeChip(
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = if (active) activeBg else Color(0xFFE2E8F0)
+        color = if (active) activeBg else AppTheme.colors.surfaceSubtle
     ) {
         Text(
             text = label,
             fontSize = 11.5.sp,
             fontWeight = FontWeight.Bold,
-            color = if (active) activeText else Color(0xFF64748B),
+            color = if (active) activeText else AppTheme.colors.textMuted,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
         )
     }
@@ -954,7 +951,7 @@ private fun OverviewMetricCell(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (highlight) Color(0xFFF0F9FF) else Color(0xFFF8FAFC))
+            .background(if (highlight) AppTheme.colors.statusInfoBg.copy(alpha = if (AppTheme.colors.isDark) 0.35f else 0.7f) else AppTheme.colors.surfaceVariant)
             .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
         Row(
@@ -965,18 +962,18 @@ private fun OverviewMetricCell(
             Text(
                 text = label,
                 fontSize = 11.sp,
-                color = Color(0xFF64748B)
+                color = AppTheme.colors.textSecondary
             )
             if (badge != null) {
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFD1FAE5)
+                    color = AppTheme.colors.statusSuccessBg
                 ) {
                     Text(
                         text = badge,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF065F46),
+                        color = AppTheme.colors.statusSuccessText,
                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                     )
                 }
@@ -987,7 +984,7 @@ private fun OverviewMetricCell(
             text = value,
             fontSize = 13.5.sp,
             fontWeight = FontWeight.Bold,
-            color = if (highlight) Color(0xFF0369A1) else Color(0xFF0F172A),
+            color = if (highlight) AppTheme.colors.statusInfoText else AppTheme.colors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -1002,8 +999,8 @@ private fun QuickJumpPill(
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF1F5F9),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        color = AppTheme.colors.surfaceVariant,
+        border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Row(
@@ -1013,7 +1010,7 @@ private fun QuickJumpPill(
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = Color(0xFF334155),
+                tint = AppTheme.colors.textPrimary,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -1021,7 +1018,7 @@ private fun QuickJumpPill(
                 text = text,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF334155)
+                color = AppTheme.colors.textPrimary
             )
         }
     }

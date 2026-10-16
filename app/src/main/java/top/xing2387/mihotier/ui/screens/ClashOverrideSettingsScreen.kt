@@ -96,6 +96,8 @@ import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.OriginalConfigSnapshot
 import top.xing2387.mihotier.core.config.OverrideSettings
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
+import top.xing2387.mihotier.ui.theme.appTextFieldColors
 
 private enum class OverrideSubPage {
     NONE,
@@ -281,7 +283,7 @@ fun ClashOverrideSettingsScreen(
                         text = "覆写设置 (Override)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -289,7 +291,7 @@ fun ClashOverrideSettingsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -298,30 +300,30 @@ fun ClashOverrideSettingsScreen(
                         Icon(
                             imageVector = Icons.Default.FileDownload,
                             contentDescription = "Export Overridden Config",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                     IconButton(onClick = { showResetConfirmDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.RestartAlt,
                             contentDescription = "Reset Defaults",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                     IconButton(onClick = { doSave() }) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save",
-                            tint = if (hasChanges) Color(0xFF1D68BD) else Color(0xFF0F172A)
+                            tint = if (hasChanges) AppTheme.colors.brandPrimary else AppTheme.colors.textSecondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -334,8 +336,8 @@ fun ClashOverrideSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -351,7 +353,7 @@ fun ClashOverrideSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     // Active Profile Original Settings & Export Entry Row
                     Row(
@@ -386,7 +388,7 @@ fun ClashOverrideSettingsScreen(
                                 text = "当前基准配置: ${originalSnapshot.profileName}",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A),
+                                color = AppTheme.colors.textPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -394,7 +396,7 @@ fun ClashOverrideSettingsScreen(
                             Text(
                                 text = "原含 ${originalSnapshot.rulesList.size} 条规则 · 端口 $origPort · 模式 $origMode",
                                 fontSize = 12.sp,
-                                color = Color(0xFF64748B),
+                                color = AppTheme.colors.textSecondary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -404,7 +406,7 @@ fun ClashOverrideSettingsScreen(
 
                         Surface(
                             shape = RoundedCornerShape(16.dp),
-                            color = Color(0xFFBAE6FD)
+                            color = AppTheme.colors.statusInfoBg
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -413,7 +415,7 @@ fun ClashOverrideSettingsScreen(
                                 Icon(
                                     imageVector = Icons.Default.Visibility,
                                     contentDescription = null,
-                                    tint = Color(0xFF0369A1),
+                                    tint = AppTheme.colors.statusInfoText,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -421,7 +423,7 @@ fun ClashOverrideSettingsScreen(
                                     text = "原始设置",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0369A1)
+                                    color = AppTheme.colors.statusInfoText
                                 )
                             }
                         }
@@ -436,15 +438,15 @@ fun ClashOverrideSettingsScreen(
                 text = "自定义规则与 Hosts (Rules & Hosts)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -462,7 +464,7 @@ fun ClashOverrideSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.EditNote,
@@ -473,7 +475,7 @@ fun ClashOverrideSettingsScreen(
                         onClick = { activeSubPage = OverrideSubPage.RULES_EDITOR }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardSwitchItem(
                         icon = Icons.Default.Storage,
@@ -489,7 +491,7 @@ fun ClashOverrideSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.EditNote,
@@ -509,15 +511,15 @@ fun ClashOverrideSettingsScreen(
                 text = "基础参数覆写 (General & Ports)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -532,7 +534,7 @@ fun ClashOverrideSettingsScreen(
                         onClick = { showPortDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.Shuffle,
@@ -545,7 +547,7 @@ fun ClashOverrideSettingsScreen(
                         onClick = { showModeDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.Lan,
@@ -558,7 +560,7 @@ fun ClashOverrideSettingsScreen(
                         onClick = { showAllowLanDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.Language,
@@ -571,7 +573,7 @@ fun ClashOverrideSettingsScreen(
                         onClick = { showIpv6Dialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.BugReport,
@@ -593,15 +595,15 @@ fun ClashOverrideSettingsScreen(
                 text = "DNS 覆写配置 (DNS Override)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -619,7 +621,7 @@ fun ClashOverrideSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     OverrideCardNavigationItem(
                         icon = Icons.Default.Dns,
@@ -644,7 +646,7 @@ fun ClashOverrideSettingsScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF104179),
+                    containerColor = AppTheme.colors.brandPrimary,
                     contentColor = Color.White
                 ),
                 elevation = ButtonDefaults.buttonElevation(
@@ -667,14 +669,14 @@ fun ClashOverrideSettingsScreen(
             var tempPort by remember { mutableStateOf(currentSettings.mixedPort) }
             AlertDialog(
                 onDismissRequest = { showPortDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "混合代理端口 (Mixed Port)",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
@@ -682,7 +684,7 @@ fun ClashOverrideSettingsScreen(
                         Text(
                             text = "原配置文件端口值：$origPort\n留空表示不覆写，直接沿用原配置端口：",
                             fontSize = 13.sp,
-                            color = Color(0xFF64748B),
+                            color = AppTheme.colors.textSecondary,
                             lineHeight = 18.sp
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -692,16 +694,11 @@ fun ClashOverrideSettingsScreen(
                                 tempPort = input.filter { it.isDigit() }.take(5)
                             },
                             placeholder = {
-                                Text("留空沿用原配置 ($origPort)", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                                Text("留空沿用原配置 ($origPort)", color = AppTheme.colors.textMuted, fontSize = 14.sp)
                             },
                             singleLine = true,
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF5B8DEF),
-                                unfocusedBorderColor = Color(0xFFCBD5E1),
-                                focusedContainerColor = Color(0xFFF8FAFC),
-                                unfocusedContainerColor = Color(0xFFF8FAFC)
-                            ),
+                            colors = appTextFieldColors(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -712,12 +709,12 @@ fun ClashOverrideSettingsScreen(
                         currentSettings = currentSettings.copy(mixedPort = tempPort.trim())
                         showPortDialog = false
                     }) {
-                        Text("确定", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("确定", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showPortDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -728,14 +725,14 @@ fun ClashOverrideSettingsScreen(
             var tempDns by remember { mutableStateOf(currentSettings.nameservers) }
             AlertDialog(
                 onDismissRequest = { showDnsServersDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "上游 DNS 服务器 (Nameserver)",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
@@ -743,7 +740,7 @@ fun ClashOverrideSettingsScreen(
                         Text(
                             text = "原配置 DNS：$origDnsSummary\n多个覆写 DNS 服务器请使用英文逗号分隔：",
                             fontSize = 13.sp,
-                            color = Color(0xFF64748B),
+                            color = AppTheme.colors.textSecondary,
                             lineHeight = 18.sp
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -751,15 +748,10 @@ fun ClashOverrideSettingsScreen(
                             value = tempDns,
                             onValueChange = { tempDns = it },
                             placeholder = {
-                                Text("114.114.114.114, 223.5.5.5, 8.8.8.8", color = Color(0xFF94A3B8), fontSize = 14.sp)
+                                Text("114.114.114.114, 223.5.5.5, 8.8.8.8", color = AppTheme.colors.textMuted, fontSize = 14.sp)
                             },
                             shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF5B8DEF),
-                                unfocusedBorderColor = Color(0xFFCBD5E1),
-                                focusedContainerColor = Color(0xFFF8FAFC),
-                                unfocusedContainerColor = Color(0xFFF8FAFC)
-                            ),
+                            colors = appTextFieldColors(),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -769,12 +761,12 @@ fun ClashOverrideSettingsScreen(
                         currentSettings = currentSettings.copy(nameservers = tempDns.trim())
                         showDnsServersDialog = false
                     }) {
-                        Text("确定", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("确定", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDnsServersDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -860,21 +852,21 @@ fun ClashOverrideSettingsScreen(
         if (showResetConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { showResetConfirmDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "恢复默认覆写设置",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "确定要将所有覆写参数、自定义规则与 Hosts 恢复为初始默认状态吗？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -882,12 +874,12 @@ fun ClashOverrideSettingsScreen(
                         currentSettings = OverrideSettings()
                         showResetConfirmDialog = false
                     }) {
-                        Text("恢复默认", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                        Text("恢复默认", color = AppTheme.colors.statusDangerText, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showResetConfirmDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -897,21 +889,21 @@ fun ClashOverrideSettingsScreen(
         if (showUnsavedDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "未保存的修改",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "当前覆写设置有未保存的更改，是否在离开前保存？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -920,19 +912,19 @@ fun ClashOverrideSettingsScreen(
                         doSave()
                         onNavigateBack()
                     }) {
-                        Text("保存并退出", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("保存并退出", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     Row {
                         TextButton(onClick = { showUnsavedDialog = false }) {
-                            Text("取消", color = Color(0xFF64748B))
+                            Text("取消", color = AppTheme.colors.textSecondary)
                         }
                         TextButton(onClick = {
                             showUnsavedDialog = false
                             onNavigateBack()
                         }) {
-                            Text("不保存", color = Color(0xFFDC2626))
+                            Text("不保存", color = AppTheme.colors.statusDangerText)
                         }
                     }
                 }
@@ -1080,12 +1072,12 @@ private fun OriginalConfigInspectorScreen(
                             text = "原始配置与覆写对比",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         )
                         Text(
                             text = "当前配置文件: ${snapshot.profileName}",
                             fontSize = 12.sp,
-                            color = Color(0xFF64748B)
+                            color = AppTheme.colors.textSecondary
                         )
                     }
                 },
@@ -1094,14 +1086,14 @@ private fun OriginalConfigInspectorScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 actions = {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFD1FAE5),
+                        color = AppTheme.colors.statusSuccessBg,
                         modifier = Modifier
                             .padding(end = 12.dp)
                             .clickable { onExportClick() }
@@ -1113,7 +1105,7 @@ private fun OriginalConfigInspectorScreen(
                             Icon(
                                 imageVector = Icons.Default.FileDownload,
                                 contentDescription = "Export",
-                                tint = Color(0xFF065F46),
+                                tint = AppTheme.colors.statusSuccessText,
                                 modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -1121,17 +1113,17 @@ private fun OriginalConfigInspectorScreen(
                                 text = "导出覆写配置",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF065F46)
+                                color = AppTheme.colors.statusSuccessText
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -1145,7 +1137,7 @@ private fun OriginalConfigInspectorScreen(
                     .fillMaxWidth()
                     .height(42.dp)
                     .clip(RoundedCornerShape(21.dp))
-                    .background(Color(0xFFE2E8F0))
+                    .background(AppTheme.colors.surfaceVariant)
                     .padding(3.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1156,7 +1148,7 @@ private fun OriginalConfigInspectorScreen(
                             .weight(1f)
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(18.dp))
-                            .background(if (isSelected) Color(0xFFBAE6FD) else Color.Transparent)
+                            .background(if (isSelected) AppTheme.colors.tabSelectedBg else Color.Transparent)
                             .clickable { selectedTab = index },
                         contentAlignment = Alignment.Center
                     ) {
@@ -1164,7 +1156,7 @@ private fun OriginalConfigInspectorScreen(
                             text = tabTitle,
                             fontSize = 12.5.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color(0xFF0369A1) else Color(0xFF64748B),
+                            color = if (isSelected) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -1186,10 +1178,10 @@ private fun OriginalConfigInspectorScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
                                 border = BorderStroke(
                                     width = if (row.isOverridden) 1.5.dp else 1.dp,
-                                    color = if (row.isOverridden) Color(0xFF5B8DEF) else Color(0xFFE2E8F0)
+                                    color = if (row.isOverridden) AppTheme.colors.brandPrimary else AppTheme.colors.cardBorder
                                 ),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
@@ -1208,26 +1200,26 @@ private fun OriginalConfigInspectorScreen(
                                                 text = row.label,
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF0F172A)
+                                                color = AppTheme.colors.textPrimary
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
                                                 text = row.keyName,
                                                 fontSize = 12.sp,
                                                 fontFamily = FontFamily.Monospace,
-                                                color = Color(0xFF64748B)
+                                                color = AppTheme.colors.textSecondary
                                             )
                                         }
 
                                         Surface(
                                             shape = RoundedCornerShape(6.dp),
-                                            color = if (row.isOverridden) Color(0xFFBAE6FD) else Color(0xFFF1F5F9)
+                                            color = if (row.isOverridden) AppTheme.colors.statusInfoBg else AppTheme.colors.surfaceSubtle
                                         ) {
                                             Text(
                                                 text = if (row.isOverridden) "已覆写" else "沿用原配置",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = if (row.isOverridden) Color(0xFF0369A1) else Color(0xFF64748B),
+                                                color = if (row.isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary,
                                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                                             )
                                         }
@@ -1244,13 +1236,13 @@ private fun OriginalConfigInspectorScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(RoundedCornerShape(10.dp))
-                                                .background(Color(0xFFF8FAFC))
+                                                .background(AppTheme.colors.surfaceSubtle)
                                                 .padding(horizontal = 10.dp, vertical = 8.dp)
                                         ) {
                                             Text(
                                                 text = "配置文件原始值",
                                                 fontSize = 11.sp,
-                                                color = Color(0xFF64748B)
+                                                color = AppTheme.colors.textSecondary
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
@@ -1258,7 +1250,7 @@ private fun OriginalConfigInspectorScreen(
                                                 fontSize = 13.sp,
                                                 fontFamily = FontFamily.Monospace,
                                                 fontWeight = FontWeight.Medium,
-                                                color = Color(0xFF334155)
+                                                color = AppTheme.colors.textPrimary
                                             )
                                         }
 
@@ -1268,14 +1260,14 @@ private fun OriginalConfigInspectorScreen(
                                                 .weight(1f)
                                                 .clip(RoundedCornerShape(10.dp))
                                                 .background(
-                                                    if (row.isOverridden) Color(0xFFF0F9FF) else Color(0xFFF8FAFC)
+                                                    if (row.isOverridden) AppTheme.colors.statusInfoBg.copy(alpha = 0.5f) else AppTheme.colors.surfaceSubtle
                                                 )
                                                 .padding(horizontal = 10.dp, vertical = 8.dp)
                                         ) {
                                             Text(
                                                 text = "最终生效值",
                                                 fontSize = 11.sp,
-                                                color = if (row.isOverridden) Color(0xFF0369A1) else Color(0xFF64748B)
+                                                color = if (row.isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
@@ -1283,7 +1275,7 @@ private fun OriginalConfigInspectorScreen(
                                                 fontSize = 13.sp,
                                                 fontFamily = FontFamily.Monospace,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (row.isOverridden) Color(0xFF0369A1) else Color(0xFF334155)
+                                                color = if (row.isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textPrimary
                                             )
                                         }
                                     }
@@ -1310,8 +1302,8 @@ private fun OriginalConfigInspectorScreen(
                                 .fillMaxWidth()
                                 .height(38.dp),
                             shape = RoundedCornerShape(19.dp),
-                            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                            color = Color.White
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
+                            color = AppTheme.colors.cardBackground
                         ) {
                             Row(
                                 modifier = Modifier
@@ -1322,7 +1314,7 @@ private fun OriginalConfigInspectorScreen(
                                 Icon(
                                     imageVector = Icons.Default.Search,
                                     contentDescription = "Search",
-                                    tint = Color(0xFF64748B),
+                                    tint = AppTheme.colors.textSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -1331,15 +1323,15 @@ private fun OriginalConfigInspectorScreen(
                                         Text(
                                             text = "搜索原配置中的规则 (如 google / DIRECT / PROXY)...",
                                             fontSize = 13.sp,
-                                            color = Color(0xFF94A3B8)
+                                            color = AppTheme.colors.textMuted
                                         )
                                     }
                                     BasicTextField(
                                         value = searchQuery,
                                         onValueChange = { searchQuery = it },
                                         singleLine = true,
-                                        textStyle = TextStyle(fontSize = 13.sp, color = Color(0xFF0F172A)),
-                                        cursorBrush = SolidColor(Color(0xFF1D68BD)),
+                                        textStyle = TextStyle(fontSize = 13.sp, color = AppTheme.colors.textPrimary),
+                                        cursorBrush = SolidColor(AppTheme.colors.brandPrimary),
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
@@ -1347,7 +1339,7 @@ private fun OriginalConfigInspectorScreen(
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Clear",
-                                        tint = Color(0xFF64748B),
+                                        tint = AppTheme.colors.textSecondary,
                                         modifier = Modifier
                                             .size(16.dp)
                                             .clickable { searchQuery = "" }
@@ -1364,8 +1356,8 @@ private fun OriginalConfigInspectorScreen(
                                 .weight(1f)
                                 .padding(bottom = 8.dp),
                             shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             if (filteredRules.isEmpty()) {
@@ -1376,7 +1368,7 @@ private fun OriginalConfigInspectorScreen(
                                     Text(
                                         text = "未找到匹配的原始规则",
                                         fontSize = 14.sp,
-                                        color = Color(0xFF64748B)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                 }
                             } else {
@@ -1395,17 +1387,17 @@ private fun OriginalConfigInspectorScreen(
                                                 text = "#${idx + 1}",
                                                 fontSize = 11.sp,
                                                 fontFamily = FontFamily.Monospace,
-                                                color = Color(0xFF94A3B8),
+                                                color = AppTheme.colors.textMuted,
                                                 modifier = Modifier.width(44.dp)
                                             )
                                             Text(
                                                 text = rule,
                                                 fontSize = 12.5.sp,
                                                 fontFamily = FontFamily.Monospace,
-                                                color = Color(0xFF0F172A)
+                                                color = AppTheme.colors.textPrimary
                                             )
                                         }
-                                        HorizontalDivider(color = Color(0xFFF8FAFC), thickness = 1.dp)
+                                        HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
                                     }
                                 }
                             }
@@ -1425,8 +1417,8 @@ private fun OriginalConfigInspectorScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             Column(
@@ -1439,18 +1431,18 @@ private fun OriginalConfigInspectorScreen(
                                         text = "原始 DNS 配置段落 (dns:)",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFBAE6FD)
+                                        color = AppTheme.colors.statusInfoBg
                                     ) {
                                         Text(
                                             text = "只读",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0369A1),
+                                            color = AppTheme.colors.statusInfoText,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
@@ -1460,7 +1452,7 @@ private fun OriginalConfigInspectorScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFFF8FAFC))
+                                        .background(AppTheme.colors.surfaceSubtle)
                                         .padding(12.dp)
                                 ) {
                                     Text(
@@ -1468,7 +1460,7 @@ private fun OriginalConfigInspectorScreen(
                                         fontSize = 12.5.sp,
                                         fontFamily = FontFamily.Monospace,
                                         lineHeight = 18.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                 }
                             }
@@ -1477,8 +1469,8 @@ private fun OriginalConfigInspectorScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             Column(
@@ -1491,18 +1483,18 @@ private fun OriginalConfigInspectorScreen(
                                         text = "原始 Hosts 配置段落 (hosts:)",
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Surface(
                                         shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFBAE6FD)
+                                        color = AppTheme.colors.statusInfoBg
                                     ) {
                                         Text(
                                             text = "只读",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF0369A1),
+                                            color = AppTheme.colors.statusInfoText,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                         )
                                     }
@@ -1512,7 +1504,7 @@ private fun OriginalConfigInspectorScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(Color(0xFFF8FAFC))
+                                        .background(AppTheme.colors.surfaceSubtle)
                                         .padding(12.dp)
                                 ) {
                                     Text(
@@ -1520,7 +1512,7 @@ private fun OriginalConfigInspectorScreen(
                                         fontSize = 12.5.sp,
                                         fontFamily = FontFamily.Monospace,
                                         lineHeight = 18.sp,
-                                        color = Color(0xFF0F172A)
+                                        color = AppTheme.colors.textPrimary
                                     )
                                 }
                             }
@@ -1554,8 +1546,8 @@ private fun OriginalConfigInspectorScreen(
                                     .weight(1f)
                                     .height(38.dp),
                                 shape = RoundedCornerShape(19.dp),
-                                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                                color = Color.White
+                                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
+                                color = AppTheme.colors.cardBackground
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -1566,7 +1558,7 @@ private fun OriginalConfigInspectorScreen(
                                     Icon(
                                         imageVector = Icons.Default.Search,
                                         contentDescription = "Search",
-                                        tint = Color(0xFF64748B),
+                                        tint = AppTheme.colors.textSecondary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -1575,15 +1567,15 @@ private fun OriginalConfigInspectorScreen(
                                             Text(
                                                 text = if (showOverriddenYaml) "检索覆写后 YAML 内容..." else "检索原始 YAML 内容...",
                                                 fontSize = 13.sp,
-                                                color = Color(0xFF94A3B8)
+                                                color = AppTheme.colors.textMuted
                                             )
                                         }
                                         BasicTextField(
                                             value = searchQuery,
                                             onValueChange = { searchQuery = it },
                                             singleLine = true,
-                                            textStyle = TextStyle(fontSize = 13.sp, color = Color(0xFF0F172A)),
-                                            cursorBrush = SolidColor(Color(0xFF1D68BD)),
+                                            textStyle = TextStyle(fontSize = 13.sp, color = AppTheme.colors.textPrimary),
+                                            cursorBrush = SolidColor(AppTheme.colors.brandPrimary),
                                             modifier = Modifier.fillMaxWidth()
                                         )
                                     }
@@ -1591,7 +1583,7 @@ private fun OriginalConfigInspectorScreen(
                                         Icon(
                                             imageVector = Icons.Default.Close,
                                             contentDescription = "Clear",
-                                            tint = Color(0xFF64748B),
+                                            tint = AppTheme.colors.textSecondary,
                                             modifier = Modifier
                                                 .size(16.dp)
                                                 .clickable { searchQuery = "" }
@@ -1605,7 +1597,7 @@ private fun OriginalConfigInspectorScreen(
                                 modifier = Modifier
                                     .height(38.dp)
                                     .clip(RoundedCornerShape(19.dp))
-                                    .background(Color(0xFFE2E8F0))
+                                    .background(AppTheme.colors.surfaceVariant)
                                     .padding(3.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -1613,7 +1605,7 @@ private fun OriginalConfigInspectorScreen(
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(if (!showOverriddenYaml) Color(0xFFBAE6FD) else Color.Transparent)
+                                        .background(if (!showOverriddenYaml) AppTheme.colors.tabSelectedBg else Color.Transparent)
                                         .clickable { showOverriddenYaml = false }
                                         .padding(horizontal = 10.dp),
                                     contentAlignment = Alignment.Center
@@ -1622,14 +1614,14 @@ private fun OriginalConfigInspectorScreen(
                                         text = "原始",
                                         fontSize = 12.sp,
                                         fontWeight = if (!showOverriddenYaml) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (!showOverriddenYaml) Color(0xFF0369A1) else Color(0xFF64748B)
+                                        color = if (!showOverriddenYaml) AppTheme.colors.tabSelectedText else AppTheme.colors.tabUnselectedText
                                     )
                                 }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(if (showOverriddenYaml) Color(0xFFD1FAE5) else Color.Transparent)
+                                        .background(if (showOverriddenYaml) AppTheme.colors.statusSuccessBg else Color.Transparent)
                                         .clickable { showOverriddenYaml = true }
                                         .padding(horizontal = 10.dp),
                                     contentAlignment = Alignment.Center
@@ -1638,7 +1630,7 @@ private fun OriginalConfigInspectorScreen(
                                         text = "覆写后",
                                         fontSize = 12.sp,
                                         fontWeight = if (showOverriddenYaml) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (showOverriddenYaml) Color(0xFF065F46) else Color(0xFF64748B)
+                                        color = if (showOverriddenYaml) AppTheme.colors.statusSuccessText else AppTheme.colors.tabUnselectedText
                                     )
                                 }
                             }
@@ -1652,8 +1644,8 @@ private fun OriginalConfigInspectorScreen(
                                 .weight(1f)
                                 .padding(bottom = 8.dp),
                             shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                         ) {
                             LazyColumn(
@@ -1670,7 +1662,7 @@ private fun OriginalConfigInspectorScreen(
                                             text = lineNum.toString().padStart(4, ' '),
                                             fontSize = 11.5.sp,
                                             fontFamily = FontFamily.Monospace,
-                                            color = Color(0xFF94A3B8),
+                                            color = AppTheme.colors.textMuted,
                                             modifier = Modifier.width(42.dp)
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -1678,7 +1670,7 @@ private fun OriginalConfigInspectorScreen(
                                             text = lineContent,
                                             fontSize = 12.sp,
                                             fontFamily = FontFamily.Monospace,
-                                            color = Color(0xFF0F172A)
+                                            color = AppTheme.colors.textPrimary
                                         )
                                     }
                                 }
@@ -1720,7 +1712,7 @@ private fun OverrideTextEditorScreen(
                         text = title,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A),
+                        color = AppTheme.colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1730,16 +1722,16 @@ private fun OverrideTextEditorScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -1752,8 +1744,8 @@ private fun OverrideTextEditorScreen(
                     .fillMaxSize()
                     .padding(bottom = 8.dp),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -1772,18 +1764,18 @@ private fun OverrideTextEditorScreen(
                                 text = "快捷插入模板",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                                color = AppTheme.colors.textPrimary
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFBAE6FD)
+                                color = AppTheme.colors.statusInfoBg
                             ) {
                                 Text(
                                     text = "$badgeText · $validLineCount 条",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0369A1),
+                                    color = AppTheme.colors.statusInfoText,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                                 )
                             }
@@ -1791,7 +1783,7 @@ private fun OverrideTextEditorScreen(
 
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFBAE6FD),
+                            color = AppTheme.colors.statusInfoBg,
                             modifier = Modifier.clickable { onViewOriginalClick() }
                         ) {
                             Row(
@@ -1801,7 +1793,7 @@ private fun OverrideTextEditorScreen(
                                 Icon(
                                     imageVector = Icons.Default.Visibility,
                                     contentDescription = null,
-                                    tint = Color(0xFF0369A1),
+                                    tint = AppTheme.colors.statusInfoText,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -1809,7 +1801,7 @@ private fun OverrideTextEditorScreen(
                                     text = "查看原配置",
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF0369A1)
+                                    color = AppTheme.colors.statusInfoText
                                 )
                             }
                         }
@@ -1819,7 +1811,7 @@ private fun OverrideTextEditorScreen(
                     Text(
                         text = originalHint,
                         fontSize = 12.sp,
-                        color = Color(0xFF64748B)
+                        color = AppTheme.colors.textSecondary
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -1834,8 +1826,8 @@ private fun OverrideTextEditorScreen(
                         quickTemplates.forEach { tpl ->
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                color = AppTheme.colors.surfaceSubtle,
+                                border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
                                 modifier = Modifier.clickable {
                                     text = if (text.isBlank() || text.endsWith("\n")) {
                                         "$text$tpl\n"
@@ -1848,7 +1840,7 @@ private fun OverrideTextEditorScreen(
                                     text = "+ $tpl",
                                     fontSize = 12.sp,
                                     fontFamily = FontFamily.Monospace,
-                                    color = Color(0xFF334155),
+                                    color = AppTheme.colors.textPrimary,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
                             }
@@ -1866,23 +1858,17 @@ private fun OverrideTextEditorScreen(
                                 text = placeholder,
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 13.sp,
-                                color = Color(0xFF94A3B8)
+                                color = AppTheme.colors.textMuted
                             )
                         },
                         textStyle = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,
                             lineHeight = 19.sp,
-                            color = Color(0xFF0F172A)
+                            color = AppTheme.colors.textPrimary
                         ),
                         shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF5B8DEF),
-                            unfocusedBorderColor = Color(0xFFCBD5E1),
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedContainerColor = Color(0xFFF8FAFC),
-                            cursorColor = Color(0xFF104179)
-                        ),
+                        colors = appTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
@@ -1897,7 +1883,7 @@ private fun OverrideTextEditorScreen(
                             .height(50.dp),
                         shape = RoundedCornerShape(25.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF104179),
+                            containerColor = AppTheme.colors.brandPrimary,
                             contentColor = Color.White
                         )
                     ) {
@@ -1923,14 +1909,14 @@ private fun OverrideRadioDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = AppTheme.colors.cardBackground,
         shape = RoundedCornerShape(20.dp),
         title = {
             Text(
                 text = title,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
         },
         text = {
@@ -1948,15 +1934,15 @@ private fun OverrideRadioDialog(
                             selected = (selectedValue == value),
                             onClick = { onSelect(value) },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF1D68BD),
-                                unselectedColor = Color(0xFF64748B)
+                                selectedColor = AppTheme.colors.brandPrimary,
+                                unselectedColor = AppTheme.colors.textMuted
                             )
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = label,
                             fontSize = 15.sp,
-                            color = Color(0xFF0F172A),
+                            color = AppTheme.colors.textPrimary,
                             fontWeight = if (selectedValue == value) FontWeight.SemiBold else FontWeight.Normal
                         )
                     }
@@ -1966,7 +1952,7 @@ private fun OverrideRadioDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", color = Color(0xFF64748B))
+                Text("取消", color = AppTheme.colors.textSecondary)
             }
         }
     )
@@ -2039,7 +2025,7 @@ private fun OverrideCardSwitchItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F172A),
+                    color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -2048,13 +2034,13 @@ private fun OverrideCardSwitchItem(
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = if (isOverridden) Color(0xFFBAE6FD) else Color(0xFFF1F5F9)
+                        color = if (isOverridden) AppTheme.colors.statusInfoBg else AppTheme.colors.surfaceSubtle
                     ) {
                         Text(
                             text = originalBadge,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isOverridden) Color(0xFF0369A1) else Color(0xFF64748B),
+                            color = if (isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
                         )
                     }
@@ -2064,7 +2050,7 @@ private fun OverrideCardSwitchItem(
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -2076,9 +2062,9 @@ private fun OverrideCardSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF1D68BD),
+                checkedTrackColor = AppTheme.colors.brandPrimary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFCBD5E1)
+                uncheckedTrackColor = AppTheme.colors.cardBorder
             )
         )
     }
@@ -2125,7 +2111,7 @@ private fun OverrideCardNavigationItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F172A),
+                    color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -2134,13 +2120,13 @@ private fun OverrideCardNavigationItem(
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = if (isOverridden) Color(0xFFBAE6FD) else Color(0xFFF1F5F9)
+                        color = if (isOverridden) AppTheme.colors.statusInfoBg else AppTheme.colors.surfaceSubtle
                     ) {
                         Text(
                             text = originalBadge,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isOverridden) Color(0xFF0369A1) else Color(0xFF64748B),
+                            color = if (isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
                         )
                     }
@@ -2150,7 +2136,7 @@ private fun OverrideCardNavigationItem(
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -2160,7 +2146,7 @@ private fun OverrideCardNavigationItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Navigate",
-            tint = Color(0xFF94A3B8),
+            tint = AppTheme.colors.textMuted,
             modifier = Modifier.size(14.dp)
         )
     }

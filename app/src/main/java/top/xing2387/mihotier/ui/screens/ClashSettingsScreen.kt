@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import top.xing2387.mihotier.core.config.AppSettingsRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,7 +86,7 @@ fun ClashSettingsScreen(
                         text = "设置 (Settings)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -93,16 +94,16 @@ fun ClashSettingsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -113,16 +114,16 @@ fun ClashSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     // 1. 通知栏显示实时网速 (Switch)
                     SettingsSwitchItem(
                         icon = Icons.Default.NotificationsActive,
-                        iconBg = Color(0xFFBAE6FD),
-                        iconTint = Color(0xFF0369A1),
+                        iconBg = AppTheme.colors.statusInfoBg,
+                        iconTint = AppTheme.colors.statusInfoText,
                         title = "通知栏显示实时网速",
                         subtitle = "在系统通知中展示当前上行与下行带宽",
                         checked = showSpeedNotification,
@@ -141,37 +142,37 @@ fun ClashSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     // 2. 网络设置 (Network)
                     SettingsNavigationItem(
                         icon = Icons.Default.Public,
-                        iconBg = Color(0xFFA7F3D0),
-                        iconTint = Color(0xFF065F46),
+                        iconBg = AppTheme.colors.statusSuccessBg,
+                        iconTint = AppTheme.colors.statusSuccessText,
                         title = "网络设置 (Network)",
                         subtitle = "系统代理、DNS、Bypass LAN及IPv6",
                         onClick = onNavigateToNetwork
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     // 3. 覆写设置 (Override)
                     SettingsNavigationItem(
                         icon = Icons.Default.Tune,
-                        iconBg = Color(0xFFFED7AA),
-                        iconTint = Color(0xFF9A3412),
+                        iconBg = AppTheme.colors.statusWarningBg,
+                        iconTint = AppTheme.colors.statusWarningText,
                         title = "覆写设置 (Override)",
                         subtitle = "自定义规则、hosts 与 DNS 覆写配置",
                         onClick = onNavigateToOverride
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     // 4. Meta 特性 (Meta Features)
                     SettingsNavigationItem(
                         icon = Icons.Default.AutoAwesome,
-                        iconBg = Color(0xFFFBCFE8),
-                        iconTint = Color(0xFF9D174D),
+                        iconBg = AppTheme.colors.statusPurpleBg,
+                        iconTint = AppTheme.colors.statusPurpleText,
                         title = "Meta 特性 (Meta Features)",
                         subtitle = "内核高级功能、进程过滤及实验特性",
                         onClick = onNavigateToMetaFeatures
@@ -221,13 +222,13 @@ private fun SettingsSwitchItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -239,9 +240,9 @@ private fun SettingsSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF1D68BD),
+                checkedTrackColor = AppTheme.colors.brandPrimary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFCBD5E1)
+                uncheckedTrackColor = AppTheme.colors.innerBorder
             )
         )
     }
@@ -285,13 +286,13 @@ private fun SettingsNavigationItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -301,7 +302,7 @@ private fun SettingsNavigationItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Navigate",
-            tint = Color(0xFF94A3B8),
+            tint = AppTheme.colors.textMuted,
             modifier = Modifier.size(14.dp)
         )
     }

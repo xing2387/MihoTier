@@ -113,6 +113,7 @@ fun ClashProxyScreen(
         }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Proxy", fontWeight = FontWeight.Medium) },

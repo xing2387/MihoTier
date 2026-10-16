@@ -68,6 +68,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import top.xing2387.mihotier.core.config.NetworkSettingsRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,7 +136,7 @@ fun ClashNetworkSettingsScreen(
                         text = "网络设置 (Network)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -143,7 +144,7 @@ fun ClashNetworkSettingsScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -152,16 +153,16 @@ fun ClashNetworkSettingsScreen(
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save",
-                            tint = if (hasChanges) Color(0xFF1D68BD) else Color(0xFF0F172A)
+                            tint = if (hasChanges) AppTheme.colors.brandPrimary else AppTheme.colors.textPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -174,14 +175,14 @@ fun ClashNetworkSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 NetworkCardSwitchItem(
                     icon = Icons.Default.Public,
-                    iconBg = Color(0xFFA7F3D0),
-                    iconTint = Color(0xFF065F46),
+                    iconBg = AppTheme.colors.statusSuccessBg,
+                    iconTint = AppTheme.colors.statusSuccessText,
                     title = "路由系统流量 (Route System Traffic)",
                     subtitle = "通过 VpnService 自动接管并路由全局系统流量",
                     checked = currentSettings.routeSystemTraffic,
@@ -198,7 +199,7 @@ fun ClashNetworkSettingsScreen(
                 text = "VPN 服务选项 (VpnService Options)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
@@ -206,15 +207,15 @@ fun ClashNetworkSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     NetworkCardSwitchItem(
                         icon = Icons.Default.Lan,
-                        iconBg = Color(0xFFBAE6FD),
-                        iconTint = Color(0xFF0369A1),
+                        iconBg = AppTheme.colors.statusInfoBg,
+                        iconTint = AppTheme.colors.statusInfoText,
                         title = "绕过私有网络 (Bypass Private Network)",
                         subtitle = "直连局域网与私有网段地址，不经过代理",
                         checked = currentSettings.bypassPrivateNetwork,
@@ -223,12 +224,12 @@ fun ClashNetworkSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     NetworkCardSwitchItem(
                         icon = Icons.Default.Dns,
-                        iconBg = Color(0xFFE0E7FF),
-                        iconTint = Color(0xFF3730A3),
+                        iconBg = AppTheme.colors.statusInfoBg,
+                        iconTint = AppTheme.colors.statusInfoText,
                         title = "DNS 劫持 (DNS Hijacking)",
                         subtitle = "拦截并处理所有系统 DNS 解析数据包",
                         checked = currentSettings.dnsHijacking,
@@ -237,12 +238,12 @@ fun ClashNetworkSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     NetworkCardSwitchItem(
                         icon = Icons.AutoMirrored.Filled.CallSplit,
-                        iconBg = Color(0xFFFED7AA),
-                        iconTint = Color(0xFF9A3412),
+                        iconBg = AppTheme.colors.statusWarningBg,
+                        iconTint = AppTheme.colors.statusWarningText,
                         title = "允许应用绕过 (Allow Bypass)",
                         subtitle = "允许应用声明绕过当前 VPN 连接直接访问网络",
                         checked = currentSettings.allowBypass,
@@ -251,12 +252,12 @@ fun ClashNetworkSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     NetworkCardSwitchItem(
                         icon = Icons.Default.Language,
-                        iconBg = Color(0xFFCCFBF1),
-                        iconTint = Color(0xFF0F766E),
+                        iconBg = AppTheme.colors.statusInfoBg,
+                        iconTint = AppTheme.colors.statusInfoText,
                         title = "允许 IPv6 (Allow IPv6)",
                         subtitle = "允许通过 VpnService 转发 IPv6 网络流量",
                         checked = currentSettings.allowIpv6,
@@ -265,12 +266,12 @@ fun ClashNetworkSettingsScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     NetworkCardSwitchItem(
                         icon = Icons.Default.Hub,
-                        iconBg = Color(0xFFFBCFE8),
-                        iconTint = Color(0xFF9D174D),
+                        iconBg = AppTheme.colors.statusPurpleBg,
+                        iconTint = AppTheme.colors.statusPurpleText,
                         title = "系统代理 (System Proxy)",
                         subtitle = "将 HTTP 代理自动附加至 VpnService",
                         checked = currentSettings.systemProxy,
@@ -288,7 +289,7 @@ fun ClashNetworkSettingsScreen(
                 text = "协议栈与分应用代理 (Stack & Access Control)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
@@ -296,38 +297,38 @@ fun ClashNetworkSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     NetworkCardNavigationItem(
                         icon = Icons.Default.Layers,
-                        iconBg = Color(0xFFBAE6FD),
-                        iconTint = Color(0xFF0369A1),
+                        iconBg = AppTheme.colors.statusInfoBg,
+                        iconTint = AppTheme.colors.statusInfoText,
                         title = "协议栈模式 (Stack Mode)",
                         subtitle = formatStackModeLabel(currentSettings.stackMode),
                         onClick = { showStackModeDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     NetworkCardNavigationItem(
                         icon = Icons.Default.Shield,
-                        iconBg = Color(0xFFA7F3D0),
-                        iconTint = Color(0xFF065F46),
+                        iconBg = AppTheme.colors.statusSuccessBg,
+                        iconTint = AppTheme.colors.statusSuccessText,
                         title = "分应用控制模式 (Access Control Mode)",
                         subtitle = formatAccessControlLabel(currentSettings.accessControlMode),
                         onClick = { showAccessControlDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     val pkgCount = currentSettings.accessControlPackages.size
                     NetworkCardNavigationItem(
                         icon = Icons.Default.Apps,
-                        iconBg = Color(0xFFFED7AA),
-                        iconTint = Color(0xFF9A3412),
+                        iconBg = AppTheme.colors.statusWarningBg,
+                        iconTint = AppTheme.colors.statusWarningText,
                         title = "分应用代理列表 (Access Control Packages)",
                         subtitle = if (pkgCount == 0) "配置允许或绕过代理的应用程序" else "已选择 $pkgCount 个应用",
                         onClick = {
@@ -351,7 +352,7 @@ fun ClashNetworkSettingsScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF104179),
+                    containerColor = AppTheme.colors.brandPrimary,
                     contentColor = Color.White
                 ),
                 elevation = ButtonDefaults.buttonElevation(
@@ -373,21 +374,21 @@ fun ClashNetworkSettingsScreen(
         if (showUnsavedDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "未保存的修改",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "当前网络设置有未保存的更改，是否在离开前保存？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -396,13 +397,13 @@ fun ClashNetworkSettingsScreen(
                         doSave()
                         onNavigateBack()
                     }) {
-                        Text("保存并退出", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("保存并退出", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     Row {
                         TextButton(onClick = { showUnsavedDialog = false }) {
-                            Text("取消", color = Color(0xFF64748B))
+                            Text("取消", color = AppTheme.colors.textSecondary)
                         }
                         TextButton(onClick = {
                             showUnsavedDialog = false
@@ -419,14 +420,14 @@ fun ClashNetworkSettingsScreen(
         if (showStackModeDialog) {
             AlertDialog(
                 onDismissRequest = { showStackModeDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "协议栈模式 (Stack Mode)",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
@@ -450,15 +451,15 @@ fun ClashNetworkSettingsScreen(
                                         showStackModeDialog = false
                                     },
                                     colors = RadioButtonDefaults.colors(
-                                        selectedColor = Color(0xFF1D68BD),
-                                        unselectedColor = Color(0xFF64748B)
+                                        selectedColor = AppTheme.colors.brandPrimary,
+                                        unselectedColor = AppTheme.colors.textSecondary
                                     )
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = formatStackModeLabel(mode),
                                     fontSize = 15.sp,
-                                    color = Color(0xFF0F172A),
+                                    color = AppTheme.colors.textPrimary,
                                     fontWeight = if (currentSettings.stackMode == mode) FontWeight.SemiBold else FontWeight.Normal
                                 )
                             }
@@ -468,7 +469,7 @@ fun ClashNetworkSettingsScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { showStackModeDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -478,14 +479,14 @@ fun ClashNetworkSettingsScreen(
         if (showAccessControlDialog) {
             AlertDialog(
                 onDismissRequest = { showAccessControlDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "分应用控制模式",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
@@ -509,15 +510,15 @@ fun ClashNetworkSettingsScreen(
                                         showAccessControlDialog = false
                                     },
                                     colors = RadioButtonDefaults.colors(
-                                        selectedColor = Color(0xFF1D68BD),
-                                        unselectedColor = Color(0xFF64748B)
+                                        selectedColor = AppTheme.colors.brandPrimary,
+                                        unselectedColor = AppTheme.colors.textSecondary
                                     )
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = formatAccessControlLabel(mode),
                                     fontSize = 15.sp,
-                                    color = Color(0xFF0F172A),
+                                    color = AppTheme.colors.textPrimary,
                                     fontWeight = if (currentSettings.accessControlMode == mode) FontWeight.SemiBold else FontWeight.Normal
                                 )
                             }
@@ -527,7 +528,7 @@ fun ClashNetworkSettingsScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { showAccessControlDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -592,13 +593,13 @@ private fun NetworkCardSwitchItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -610,9 +611,9 @@ private fun NetworkCardSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF1D68BD),
+                checkedTrackColor = AppTheme.colors.brandPrimary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFCBD5E1)
+                uncheckedTrackColor = AppTheme.colors.innerBorder
             )
         )
     }
@@ -656,13 +657,13 @@ private fun NetworkCardNavigationItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -672,7 +673,7 @@ private fun NetworkCardNavigationItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Select",
-            tint = Color(0xFF94A3B8),
+            tint = AppTheme.colors.textMuted,
             modifier = Modifier.size(14.dp)
         )
     }

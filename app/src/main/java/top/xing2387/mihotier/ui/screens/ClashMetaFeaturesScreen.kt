@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.sp
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.MetaFeaturesSettings
 import top.xing2387.mihotier.core.config.MetaFeaturesSettingsRepository
+import top.xing2387.mihotier.ui.theme.AppTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,7 +138,7 @@ fun ClashMetaFeaturesScreen(
                         text = "Meta 特性 (Meta Features)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 navigationIcon = {
@@ -145,7 +146,7 @@ fun ClashMetaFeaturesScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                 },
@@ -154,23 +155,23 @@ fun ClashMetaFeaturesScreen(
                         Icon(
                             imageVector = Icons.Default.RestartAlt,
                             contentDescription = "Reset Defaults",
-                            tint = Color(0xFF0F172A)
+                            tint = AppTheme.colors.textPrimary
                         )
                     }
                     IconButton(onClick = { doSave() }) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save",
-                            tint = if (hasChanges) Color(0xFF1D68BD) else Color(0xFF0F172A)
+                            tint = if (hasChanges) AppTheme.colors.brandPrimary else AppTheme.colors.textSecondary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEEF3F8)
+                    containerColor = AppTheme.colors.background
                 )
             )
         },
-        containerColor = Color(0xFFEEF3F8)
+        containerColor = AppTheme.colors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -183,8 +184,8 @@ fun ClashMetaFeaturesScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 MetaCardSwitchItem(
@@ -207,15 +208,15 @@ fun ClashMetaFeaturesScreen(
                 text = "域名流量嗅探 (Domain Sniffer)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -233,7 +234,7 @@ fun ClashMetaFeaturesScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.SwapCalls,
@@ -247,7 +248,7 @@ fun ClashMetaFeaturesScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.FindInPage,
@@ -261,7 +262,7 @@ fun ClashMetaFeaturesScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.Public,
@@ -284,15 +285,15 @@ fun ClashMetaFeaturesScreen(
                 text = "进程匹配与连接加速 (Process & Transport)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -307,7 +308,7 @@ fun ClashMetaFeaturesScreen(
                         onClick = { showProcessModeDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardNavigationItem(
                         icon = Icons.Default.Speed,
@@ -324,7 +325,7 @@ fun ClashMetaFeaturesScreen(
                         onClick = { showUnifiedDelayDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardNavigationItem(
                         icon = Icons.Default.Bolt,
@@ -341,7 +342,7 @@ fun ClashMetaFeaturesScreen(
                         onClick = { showTcpConcurrentDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardNavigationItem(
                         icon = Icons.Default.Fingerprint,
@@ -363,15 +364,15 @@ fun ClashMetaFeaturesScreen(
                 text = "Geo 数据库与状态缓存 (GeoData & Cache)",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF475569),
+                color = AppTheme.colors.textSecondary,
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -386,7 +387,7 @@ fun ClashMetaFeaturesScreen(
                         onClick = { showGeodataLoaderDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardNavigationItem(
                         icon = Icons.Default.Storage,
@@ -403,7 +404,7 @@ fun ClashMetaFeaturesScreen(
                         onClick = { showGeodataModeDialog = true }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.Update,
@@ -417,7 +418,7 @@ fun ClashMetaFeaturesScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.History,
@@ -431,7 +432,7 @@ fun ClashMetaFeaturesScreen(
                         }
                     )
 
-                    HorizontalDivider(color = Color(0xFFF1F5F9), thickness = 1.dp)
+                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
 
                     MetaCardSwitchItem(
                         icon = Icons.Default.Cached,
@@ -457,7 +458,7 @@ fun ClashMetaFeaturesScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF104179),
+                    containerColor = AppTheme.colors.brandPrimary,
                     contentColor = Color.White
                 ),
                 elevation = ButtonDefaults.buttonElevation(
@@ -593,21 +594,21 @@ fun ClashMetaFeaturesScreen(
         if (showResetConfirmDialog) {
             AlertDialog(
                 onDismissRequest = { showResetConfirmDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "恢复默认 Meta 特性",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "确定要将所有 Meta 内核特性恢复为推荐默认状态吗？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -615,12 +616,12 @@ fun ClashMetaFeaturesScreen(
                         currentSettings = MetaFeaturesSettings()
                         showResetConfirmDialog = false
                     }) {
-                        Text("恢复默认", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                        Text("恢复默认", color = AppTheme.colors.statusDangerText, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showResetConfirmDialog = false }) {
-                        Text("取消", color = Color(0xFF64748B))
+                        Text("取消", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -630,21 +631,21 @@ fun ClashMetaFeaturesScreen(
         if (showUnsavedDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedDialog = false },
-                containerColor = Color.White,
+                containerColor = AppTheme.colors.cardBackground,
                 shape = RoundedCornerShape(20.dp),
                 title = {
                     Text(
                         text = "未保存的修改",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
+                        color = AppTheme.colors.textPrimary
                     )
                 },
                 text = {
                     Text(
                         text = "当前 Meta 特性设置有未保存的更改，是否在离开前保存？",
                         fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        color = AppTheme.colors.textSecondary
                     )
                 },
                 confirmButton = {
@@ -653,19 +654,19 @@ fun ClashMetaFeaturesScreen(
                         doSave()
                         onNavigateBack()
                     }) {
-                        Text("保存并退出", color = Color(0xFF104179), fontWeight = FontWeight.Bold)
+                        Text("保存并退出", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     Row {
                         TextButton(onClick = { showUnsavedDialog = false }) {
-                            Text("取消", color = Color(0xFF64748B))
+                            Text("取消", color = AppTheme.colors.textSecondary)
                         }
                         TextButton(onClick = {
                             showUnsavedDialog = false
                             onNavigateBack()
                         }) {
-                            Text("不保存", color = Color(0xFFDC2626))
+                            Text("不保存", color = AppTheme.colors.statusDangerText)
                         }
                     }
                 }
@@ -717,14 +718,14 @@ private fun MetaRadioDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color.White,
+        containerColor = AppTheme.colors.cardBackground,
         shape = RoundedCornerShape(20.dp),
         title = {
             Text(
                 text = title,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A)
+                color = AppTheme.colors.textPrimary
             )
         },
         text = {
@@ -742,15 +743,15 @@ private fun MetaRadioDialog(
                             selected = (selectedValue == value),
                             onClick = { onSelect(value) },
                             colors = RadioButtonDefaults.colors(
-                                selectedColor = Color(0xFF1D68BD),
-                                unselectedColor = Color(0xFF64748B)
+                                selectedColor = AppTheme.colors.brandPrimary,
+                                unselectedColor = AppTheme.colors.textMuted
                             )
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = label,
                             fontSize = 14.5.sp,
-                            color = Color(0xFF0F172A),
+                            color = AppTheme.colors.textPrimary,
                             fontWeight = if (selectedValue == value) FontWeight.SemiBold else FontWeight.Normal
                         )
                     }
@@ -760,7 +761,7 @@ private fun MetaRadioDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", color = Color(0xFF64748B))
+                Text("取消", color = AppTheme.colors.textSecondary)
             }
         }
     )
@@ -808,7 +809,7 @@ private fun MetaCardSwitchItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F172A),
+                    color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -817,13 +818,13 @@ private fun MetaCardSwitchItem(
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = if (isOverridden) Color(0xFFBAE6FD) else Color(0xFFF1F5F9)
+                        color = if (isOverridden) AppTheme.colors.statusInfoBg else AppTheme.colors.surfaceSubtle
                     ) {
                         Text(
                             text = originalBadge,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isOverridden) Color(0xFF0369A1) else Color(0xFF64748B),
+                            color = if (isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
                         )
                     }
@@ -833,7 +834,7 @@ private fun MetaCardSwitchItem(
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -845,9 +846,9 @@ private fun MetaCardSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF1D68BD),
+                checkedTrackColor = AppTheme.colors.brandPrimary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFCBD5E1)
+                uncheckedTrackColor = AppTheme.colors.cardBorder
             )
         )
     }
@@ -894,7 +895,7 @@ private fun MetaCardNavigationItem(
                     text = title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF0F172A),
+                    color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -903,13 +904,13 @@ private fun MetaCardNavigationItem(
                     Spacer(modifier = Modifier.width(6.dp))
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = if (isOverridden) Color(0xFFBAE6FD) else Color(0xFFF1F5F9)
+                        color = if (isOverridden) AppTheme.colors.statusInfoBg else AppTheme.colors.surfaceSubtle
                     ) {
                         Text(
                             text = originalBadge,
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isOverridden) Color(0xFF0369A1) else Color(0xFF64748B),
+                            color = if (isOverridden) AppTheme.colors.statusInfoText else AppTheme.colors.textSecondary,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
                         )
                     }
@@ -919,7 +920,7 @@ private fun MetaCardNavigationItem(
             Text(
                 text = subtitle,
                 fontSize = 12.5.sp,
-                color = Color(0xFF64748B),
+                color = AppTheme.colors.textSecondary,
                 lineHeight = 17.sp
             )
         }
@@ -929,7 +930,7 @@ private fun MetaCardNavigationItem(
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Navigate",
-            tint = Color(0xFF94A3B8),
+            tint = AppTheme.colors.textMuted,
             modifier = Modifier.size(14.dp)
         )
     }
