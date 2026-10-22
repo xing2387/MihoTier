@@ -92,7 +92,8 @@ fun AppSelectionScreen(
     onNavigateToProxy: () -> Unit = {},
     onNavigateToProfiles: () -> Unit = {},
     onNavigateToOverride: () -> Unit = {},
-    onNavigateToSettings: () -> Unit = {}
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToAppSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -128,7 +129,7 @@ fun AppSelectionScreen(
             isEasyTierTransitioning = false
             easyTierTargetRunning = null
             if (res.isSuccess) {
-                Toast.makeText(context, "EasyTier 组网已启动", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "EasyTier 已启动", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(
                     context,
@@ -160,7 +161,7 @@ fun AppSelectionScreen(
                 }
                 isEasyTierTransitioning = false
                 easyTierTargetRunning = null
-                Toast.makeText(context, "EasyTier 组网已停止", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "EasyTier 已停止", Toast.LENGTH_SHORT).show()
             }
         } else {
             val prepareIntent = VpnService.prepare(context)
@@ -321,35 +322,59 @@ fun AppSelectionScreen(
                     }
                 }
 
-                // Tunnel status pill
+                // Right Action Row (Tunnel status pill & App Settings button)
                 val anyTunActive = isRunning || easyTierRuntime.isRunning
                 val tunStatusLabel = when {
-                    isRunning && easyTierRuntime.isRunning -> "双核 TUN 运行中"
-                    isRunning -> "Mihomo TUN 运行中"
-                    easyTierRuntime.isRunning -> "EasyTier TUN 运行中"
-                    else -> "TUN 待机中"
+                    isRunning && easyTierRuntime.isRunning -> "已连接 DUO"
+                    isRunning -> "已连接 Mihomo"
+                    easyTierRuntime.isRunning -> "已连接 EasyTier"
+                    else -> "未连接"
                 }
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = if (anyTunActive) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (anyTunActive) AppTheme.colors.statusSuccessBg else AppTheme.colors.surfaceVariant
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = tunStatusLabel,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textMuted)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = tunStatusLabel,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (anyTunActive) AppTheme.colors.statusSuccessText else AppTheme.colors.textSecondary
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = AppTheme.colors.cardBackground,
+                        border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .clickable { onNavigateToAppSettings() }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "应用设置",
+                                tint = AppTheme.colors.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -404,21 +429,21 @@ fun AppSelectionScreen(
                         }
                         if (easyTierOnly) {
                             TopologyNodeChip(
-                                label = "EasyTier 组网",
+                                label = "EasyTier",
                                 active = true,
                                 activeBg = AppTheme.colors.statusSuccessBg,
                                 activeText = AppTheme.colors.statusSuccessText
                             )
                             Spacer(modifier = Modifier.size(16.dp))
                             TopologyNodeChip(
-                                label = "Mihomo 核心",
+                                label = "Mihomo",
                                 active = false,
                                 activeBg = AppTheme.colors.statusSuccessBg,
                                 activeText = AppTheme.colors.statusSuccessText
                             )
                         } else {
                             TopologyNodeChip(
-                                label = "Mihomo 核心",
+                                label = "Mihomo",
                                 active = isRunning,
                                 activeBg = AppTheme.colors.statusSuccessBg,
                                 activeText = AppTheme.colors.statusSuccessText
@@ -434,7 +459,7 @@ fun AppSelectionScreen(
                                 Spacer(modifier = Modifier.size(16.dp))
                             }
                             TopologyNodeChip(
-                                label = "EasyTier 组网",
+                                label = "EasyTier",
                                 active = easyTierRuntime.isRunning,
                                 activeBg = AppTheme.colors.statusSuccessBg,
                                 activeText = AppTheme.colors.statusSuccessText
@@ -684,17 +709,17 @@ fun AppSelectionScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             QuickJumpPill(
                                 icon = Icons.Default.Speed,
-                                text = "节点选择",
+                                text = "节点",
                                 onClick = onNavigateToProxy
                             )
                             QuickJumpPill(
                                 icon = Icons.Default.Description,
-                                text = "配置管理",
+                                text = "配置",
                                 onClick = onNavigateToProfiles
                             )
                             QuickJumpPill(
                                 icon = Icons.Default.Tune,
-                                text = "覆写设置",
+                                text = "覆写",
                                 onClick = onNavigateToOverride
                             )
                             QuickJumpPill(
@@ -905,7 +930,7 @@ fun AppSelectionScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "跟Mihomo同时开启时Easytier将作为其中一个节点",
+                            text = "跟Mihomo同时开启时，将作为其中一个节点",
                             fontSize = 11.5.sp,
                             color = AppTheme.colors.textSecondary
                         )

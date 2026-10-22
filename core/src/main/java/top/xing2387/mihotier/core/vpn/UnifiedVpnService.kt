@@ -641,9 +641,9 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         when {
             clashRunning && etRunning -> {
                 titleText = "Mihomo($profileName) + EasyTier($etIpDisplay)"
-                contentText = "Clash ↓$clashDownStr ↑$clashUpStr  |  ET ↓$etDownStr ↑$etUpStr"
-                bigText = "Mihomo [$profileName·$currentModeName]: ↓ $clashDownStr   ↑ $clashUpStr (累计 ↓$clashDownTotalStr ↑$clashUpTotalStr)\n" +
-                    "EasyTier [$etIpDisplay·${etState.peers.size}节点]: ↓ $etDownStr   ↑ $etUpStr (累计 ↓$etDownTotalStr ↑$etUpTotalStr)"
+                contentText = "↓$clashDownStr ↑$clashUpStr | ↓$etDownStr ↑$etUpStr"
+                bigText = "Mihomo: ↓ $clashDownStr   ↑ $clashUpStr (累计 ↓$clashDownTotalStr ↑$clashUpTotalStr)\n" +
+                    "EasyTier: ↓ $etDownStr   ↑ $etUpStr (累计 ↓$etDownTotalStr ↑$etUpTotalStr)"
             }
             !clashRunning && etRunning -> {
                 val netName = etState.networkName.ifBlank { "easytier" }

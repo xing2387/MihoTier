@@ -1,11 +1,13 @@
 package top.xing2387.mihotier.core.config
 
+import android.app.ActivityManager
 import android.content.Context
 import java.util.Locale
 
 object AppSettingsRepository {
     private const val PREFS_NAME = "clash_app_settings"
     private const val KEY_SHOW_SPEED_NOTIFICATION = "show_speed_notification"
+    private const val KEY_EXCLUDE_FROM_RECENTS = "exclude_from_recents"
 
     fun isShowSpeedNotification(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -15,6 +17,26 @@ object AppSettingsRepository {
     fun setShowSpeedNotification(context: Context, show: Boolean) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putBoolean(KEY_SHOW_SPEED_NOTIFICATION, show).apply()
+    }
+
+    fun isExcludeFromRecents(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_EXCLUDE_FROM_RECENTS, false)
+    }
+
+    fun setExcludeFromRecents(context: Context, exclude: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_EXCLUDE_FROM_RECENTS, exclude).apply()
+        applyExcludeFromRecents(context, exclude)
+    }
+
+    fun applyExcludeFromRecents(context: Context, exclude: Boolean = isExcludeFromRecents(context)) {
+        try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            am?.appTasks?.forEach { task ->
+                task.setExcludeFromRecents(exclude)
+            }
+        } catch (_: Exception) {}
     }
 }
 

@@ -23,7 +23,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import mobile.Mobile
+import top.xing2387.mihotier.core.config.AppSettingsRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
+import top.xing2387.mihotier.ui.screens.AppSettingsScreen
 import top.xing2387.mihotier.ui.screens.AppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashAppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashConnectionsScreen
@@ -102,9 +104,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        AppSettingsRepository.applyExcludeFromRecents(this)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        AppSettingsRepository.applyExcludeFromRecents(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
@@ -129,7 +137,8 @@ class MainActivity : ComponentActivity() {
                             onNavigateToProxy = { navController.navigate("clash_proxy") },
                             onNavigateToProfiles = { navController.navigate("clash_profiles") },
                             onNavigateToOverride = { navController.navigate("clash_settings_override") },
-                            onNavigateToSettings = { navController.navigate("clash_settings") }
+                            onNavigateToSettings = { navController.navigate("clash_settings") },
+                            onNavigateToAppSettings = { navController.navigate("app_settings") }
                         )
                     }
                     composable("easytier") {
@@ -197,7 +206,13 @@ class MainActivity : ComponentActivity() {
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToNetwork = { navController.navigate("clash_settings_network") },
                             onNavigateToOverride = { navController.navigate("clash_settings_override") },
-                            onNavigateToMetaFeatures = { navController.navigate("clash_settings_meta") }
+                            onNavigateToMetaFeatures = { navController.navigate("clash_settings_meta") },
+                            onNavigateToAppSettings = { navController.navigate("app_settings") }
+                        )
+                    }
+                    composable("app_settings") {
+                        AppSettingsScreen(
+                            onNavigateBack = { navController.popBackStack() }
                         )
                     }
                     composable("clash_settings_override") {
