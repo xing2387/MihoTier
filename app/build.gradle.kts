@@ -11,8 +11,8 @@ android {
         applicationId = "top.xing2387.mihotier"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 10002
+        versionName = "1.0.2"
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a"))
@@ -63,4 +63,6 @@ dependencies {
 
     implementation(project(":core"))
     implementation(project(":easytier"))
+
+    implementation("io.github.Rosemoe.sora-editor:editor:0.23.6")
 }
