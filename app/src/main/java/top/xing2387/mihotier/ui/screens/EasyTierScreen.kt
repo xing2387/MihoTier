@@ -204,7 +204,7 @@ fun EasyTierScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "EasyTier 异地组网",
+                            text = "EasyTier",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                             color = AppTheme.colors.textPrimary

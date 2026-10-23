@@ -568,7 +568,7 @@ fun AppSelectionScreen(
                 modifier = Modifier.padding(start = 6.dp, bottom = 8.dp)
             )
 
-            // 3. Large Card 1: Mihomo (Clash.Meta) Overview Card
+            // 3. Large Card 1: Mihomo Overview Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

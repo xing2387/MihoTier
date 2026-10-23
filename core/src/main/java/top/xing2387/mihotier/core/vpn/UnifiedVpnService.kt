@@ -11,6 +11,7 @@ import android.net.VpnService
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.os.Parcel
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -107,6 +108,15 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     inner class LocalBinder : Binder() {
         fun getService(): UnifiedVpnService = this@UnifiedVpnService
+
+        override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+            if (code == LAST_CALL_TRANSACTION) {
+                Log.i(TAG, "LAST_CALL_TRANSACTION received on LocalBinder")
+                onRevoke()
+                return true
+            }
+            return super.onTransact(code, data, reply, flags)
+        }
     }
 
     override fun onCreate() {
@@ -134,7 +144,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder {
+    override fun onBind(intent: Intent?): IBinder? {
+        if (intent?.action == SERVICE_INTERFACE) {
+            Log.d(TAG, "System binding with SERVICE_INTERFACE, returning super.onBind()")
+            return super.onBind(intent)
+        }
         return binder
     }
 
@@ -520,6 +534,13 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         trafficPollingJob = serviceScope.launch {
             var tick = 0L
             while (isActive && (_isRunning.value || EasyTierRepository.runtimeState.value.isRunning)) {
+                // Check if VPN was revoked by system without onRevoke being dispatched yet
+                if (_isRunning.value && VpnService.prepare(this@UnifiedVpnService) != null) {
+                    Log.w(TAG, "Detected VPN permission revoked during traffic polling (another VPN app active)")
+                    handleVpnRevoked()
+                    break
+                }
+
                 val clashRunning = _isRunning.value
                 val upSpeed = if (clashRunning) Mobile.queryTrafficNowUp() else 0L
                 val downSpeed = if (clashRunning) Mobile.queryTrafficNowDown() else 0L
@@ -703,14 +724,12 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     }
 
     private fun cancelNotification() {
-        if (isForegroundActive) {
-            try {
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            } catch (e: Exception) {
-                // ignore
-            }
-            isForegroundActive = false
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } catch (e: Exception) {
+            // ignore
         }
+        isForegroundActive = false
         try {
             notificationManager.cancel(NOTIFICATION_ID)
         } catch (e: Exception) {
@@ -827,7 +846,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
 
         if (shouldStopSelf) {
-            if (EasyTierRepository.runtimeState.value.isRunning) {
+            if (EasyTierRepository.runtimeState.value.isRunning && VpnService.prepare(this@UnifiedVpnService) == null) {
                 syncEasyTierStandaloneTun()
                 ensureTrafficPollingStarted()
             } else {
@@ -837,9 +856,52 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         }
     }
 
+    override fun onRevoke() {
+        Log.i(TAG, "onRevoke: VPN service revoked by system (another VPN app started or VPN permission revoked)")
+        handleVpnRevoked()
+        super.onRevoke()
+    }
+
+    private fun handleVpnRevoked() {
+        if (!_isRunning.value && !_isEasyTierTunActive.value && !isForegroundActive) return
+        Log.i(TAG, "Handling VPN revoke: stopping Mihomo core, clearing notification, and stopping service")
+        _isRunning.value = false
+        _isEasyTierTunActive.value = false
+        appliedEasyTierStandaloneSignature = ""
+
+        stopTrafficPollingAndNotification()
+
+        try {
+            EasyTierNative.nativeSetTunFd(0)
+        } catch (e: Throwable) {
+            Log.w(TAG, "nativeSetTunFd(0) error on revoke", e)
+        }
+        try {
+            easyTierVpnInterface?.close()
+        } catch (e: Exception) {
+            Log.w(TAG, "Error closing easyTierVpnInterface on revoke", e)
+        }
+        easyTierVpnInterface = null
+
+        try {
+            Mobile.stop()
+            Log.i(TAG, "Mihomo core stopped on revoke")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping Mihomo on revoke", e)
+        }
+        vpnInterface = null
+
+        cancelNotification()
+        stopSelf()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        stopVpn()
+        _isRunning.value = false
+        try {
+            Mobile.stop()
+        } catch (_: Exception) {}
+        vpnInterface = null
         runBlocking {
             stopEasyTierStandaloneTun()
         }

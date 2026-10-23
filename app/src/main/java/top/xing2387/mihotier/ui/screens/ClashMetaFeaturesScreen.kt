@@ -193,7 +193,7 @@ fun ClashMetaFeaturesScreen(
                     iconBg = Color(0xFFFBCFE8),
                     iconTint = Color(0xFF9D174D),
                     title = "启用 Meta 内核增强特性",
-                    subtitle = "开启后将自动向 Mihomo (Clash.Meta) 内核注入流量嗅探、进程匹配及连接优化参数",
+                    subtitle = "开启后将自动向 Mihomo 内核注入流量嗅探、进程匹配及连接优化参数",
                     checked = currentSettings.enableMetaFeatures,
                     onCheckedChange = {
                         currentSettings = currentSettings.copy(enableMetaFeatures = it)

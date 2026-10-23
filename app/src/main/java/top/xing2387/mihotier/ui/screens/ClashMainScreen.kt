@@ -22,10 +22,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
@@ -35,6 +34,7 @@ import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
@@ -44,6 +44,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -99,6 +101,7 @@ import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClashMainScreen(
     onNavigateBack: () -> Unit = {},
@@ -138,8 +141,6 @@ fun ClashMainScreen(
 
     // Dialog States
     var showModeDialog by remember { mutableStateOf(false) }
-    var showHelpDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
     var isUpdatingProfile by remember { mutableStateOf(false) }
 
     // Adaptive duration formatting: hide 0 units, minimum unit minutes
@@ -397,41 +398,27 @@ fun ClashMainScreen(
     }
 
     Scaffold(
-        containerColor = AppTheme.colors.background
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Top Bar (Fixed)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 44.dp)
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
+        containerColor = AppTheme.colors.background,
+        topBar = {
+            TopAppBar(
+                title = {
                     Text(
-                        text = "Clash Meta",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        text = "Mihomo",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
                         color = AppTheme.colors.textPrimary
                     )
-                    Text(
-                        text = "for Android",
-                        fontSize = 12.sp,
-                        color = AppTheme.colors.textSecondary,
-                        fontWeight = FontWeight.Normal
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回",
+                            tint = AppTheme.colors.textPrimary
+                        )
+                    }
+                },
+                actions = {
                     // Bolt / Speed test icon
                     IconButton(
                         onClick = {
@@ -440,8 +427,7 @@ fun ClashMainScreen(
                             } else {
                                 Toast.makeText(context, "代理未开启", Toast.LENGTH_SHORT).show()
                             }
-                        },
-                        modifier = Modifier.size(40.dp)
+                        }
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_bolt),
@@ -460,8 +446,7 @@ fun ClashMainScreen(
                             } else {
                                 Toast.makeText(context, "代理未开启", Toast.LENGTH_SHORT).show()
                             }
-                        },
-                        modifier = Modifier.size(40.dp)
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -470,10 +455,20 @@ fun ClashMainScreen(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = AppTheme.colors.background
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(6.dp))
 
             Column(
                 modifier = Modifier
@@ -483,380 +478,362 @@ fun ClashMainScreen(
             ) {
                 // 1. Status & Traffic Hero Card (Unified Deep Navy Blue Card matching Figure 1)
                 Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF104179)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
-                ) {
-                    // Top Row: Status Dot + Connection Text + Switch
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isRunning) Color(0xFF22C55E) else Color(0xFF94A3B8)
-                                    )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isRunning) "已连接 · ${formatVpnDuration(durationSeconds)}" else "未连接",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        Switch(
-                            checked = isRunning,
-                            onCheckedChange = { onToggleVpn() },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = Color(0xFF5B7EAC),
-                                uncheckedThumbColor = Color.White,
-                                uncheckedTrackColor = Color(0xFF1E3A5F)
-                            )
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Middle Row: Speeds (Download & Upload)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Download Speed
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "↓",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF22C55E)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = formatSpeed(downSpeedBytes),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        // Upload Speed
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "↑",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF38BDF8)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = formatSpeed(upSpeedBytes),
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Bottom Wave Chart with Y-Axis directly in the blue card
-                    TrafficWaveChart(
-                        points = trafficPoints,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(86.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            val disabledCardBg = AppTheme.colors.surfaceSubtle
-            val enabledCardBg = AppTheme.colors.cardBackground
-
-            val isModeClickable = isRunning
-            val isNodeClickable = isRunning
-
-            // 2. Middle 2-Column Cards (代理模式 & 当前节点)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Left Card: 代理模式
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(98.dp)
-                        .clickable {
-                            if (isModeClickable) {
-                                showModeDialog = true
-                            } else {
-                                Toast.makeText(context, "请先开启代理", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isModeClickable) enabledCardBg else disabledCardBg),
-                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Shuffle,
-                            contentDescription = "Proxy Mode",
-                            tint = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
-                            modifier = Modifier.size(26.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "代理模式",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
-                            )
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = proxyModeText,
-                                fontSize = 13.sp,
-                                color = if (isModeClickable) AppTheme.colors.textSecondary else AppTheme.colors.textMuted
-                            )
-                        }
-                    }
-                }
-
-                // Right Card: 当前节点
-                Card(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(98.dp)
-                        .clickable {
-                            if (isNodeClickable) {
-                                onNavigateToProxy()
-                            } else {
-                                Toast.makeText(context, "请先开启代理", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isNodeClickable) enabledCardBg else disabledCardBg),
-                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF104179)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.Center
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 18.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Public,
-                                contentDescription = "Node",
-                                tint = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "当前节点",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = currentNodeName,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(7.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        when {
-                                            !isNodeClickable -> AppTheme.colors.textMuted
-                                            currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
-                                            isTestingLatency -> Color(0xFF38BDF8)
-                                            else -> AppTheme.colors.textMuted
-                                        }
-                                    )
-                            )
-                            Spacer(modifier = Modifier.width(5.dp))
-                            Text(
-                                text = when {
-                                    !isNodeClickable -> "N/A"
-                                    isTestingLatency -> "测速中..."
-                                    currentNodeLatency != null && currentNodeLatency!! > 0 -> "${currentNodeLatency}ms"
-                                    else -> "N/A"
-                                },
-                                fontSize = 12.sp,
-                                color = when {
-                                    !isNodeClickable -> AppTheme.colors.textMuted
-                                    currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
-                                    isTestingLatency -> Color(0xFF38BDF8)
-                                    else -> AppTheme.colors.textSecondary
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 3. 配置文件 (Profile) Card with distinct white background & pill capsule button
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateToProfiles() },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = enabledCardBg),
-                border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Description,
-                        contentDescription = "Profile",
-                        tint = AppTheme.colors.textPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "配置文件 (Profile)",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AppTheme.colors.textPrimary
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (activeProfile != null) "$activeProfileDisplayName (已激活)" else activeProfileDisplayName,
-                            fontSize = 13.sp,
-                            color = AppTheme.colors.textSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // Pill capsule button: [ 更新 🔄 ]
-                    Surface(
-                        modifier = Modifier.clickable { updateCurrentProfile() },
-                        shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
-                        color = AppTheme.colors.surfaceVariant
-                    ) {
+                        // Top Row: Status Dot + Connection Text + Switch
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (isRunning) Color(0xFF22C55E) else Color(0xFF94A3B8)
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isRunning) "已连接 · ${formatVpnDuration(durationSeconds)}" else "未连接",
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            Switch(
+                                checked = isRunning,
+                                onCheckedChange = { onToggleVpn() },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFF5B7EAC),
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = Color(0xFF1E3A5F)
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Middle Row: Speeds (Download & Upload)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = if (isUpdatingProfile) "更新中" else "更新",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = AppTheme.colors.textPrimary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            // Download Speed
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "↓",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF22C55E)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = formatSpeed(downSpeedBytes),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            // Upload Speed
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "↑",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF38BDF8)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = formatSpeed(upSpeedBytes),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Bottom Wave Chart with Y-Axis directly in the blue card
+                        TrafficWaveChart(
+                            points = trafficPoints,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(86.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                val disabledCardBg = AppTheme.colors.surfaceSubtle
+                val enabledCardBg = AppTheme.colors.cardBackground
+
+                val isModeClickable = isRunning
+                val isNodeClickable = isRunning
+
+                // 2. Middle 2-Column Cards (代理模式 & 当前节点)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Left Card: 代理模式
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(98.dp)
+                            .clickable {
+                                if (isModeClickable) {
+                                    showModeDialog = true
+                                } else {
+                                    Toast.makeText(context, "请先开启代理", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (isModeClickable) enabledCardBg else disabledCardBg),
+                        border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Update",
-                                tint = AppTheme.colors.textPrimary,
-                                modifier = Modifier.size(15.dp)
+                                imageVector = Icons.Default.Shuffle,
+                                contentDescription = "Proxy Mode",
+                                tint = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
+                                modifier = Modifier.size(26.dp)
                             )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "代理模式",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isModeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = proxyModeText,
+                                    fontSize = 13.sp,
+                                    color = if (isModeClickable) AppTheme.colors.textSecondary else AppTheme.colors.textMuted
+                                )
+                            }
+                        }
+                    }
+
+                    // Right Card: 当前节点
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(98.dp)
+                            .clickable {
+                                if (isNodeClickable) {
+                                    onNavigateToProxy()
+                                } else {
+                                    Toast.makeText(context, "请先开启代理", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (isNodeClickable) enabledCardBg else disabledCardBg),
+                        border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Public,
+                                    contentDescription = "Node",
+                                    tint = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "当前节点",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = currentNodeName,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isNodeClickable) AppTheme.colors.textPrimary else AppTheme.colors.textMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when {
+                                                !isNodeClickable -> AppTheme.colors.textMuted
+                                                currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
+                                                isTestingLatency -> Color(0xFF38BDF8)
+                                                else -> AppTheme.colors.textMuted
+                                            }
+                                        )
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = when {
+                                        !isNodeClickable -> "N/A"
+                                        isTestingLatency -> "测速中..."
+                                        currentNodeLatency != null && currentNodeLatency!! > 0 -> "${currentNodeLatency}ms"
+                                        else -> "N/A"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = when {
+                                        !isNodeClickable -> AppTheme.colors.textMuted
+                                        currentNodeLatency != null && currentNodeLatency!! > 0 -> Color(0xFF22C55E)
+                                        isTestingLatency -> Color(0xFF38BDF8)
+                                        else -> AppTheme.colors.textSecondary
+                                    }
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. Bottom Menu Group Card (White Group Card)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
-                border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(
+                // 3. 配置文件 (Profile) Card with distinct white background & pill capsule button
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
+                        .clickable { onNavigateToProfiles() },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = enabledCardBg),
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                 ) {
-                    HomeMenuItem(
-                        icon = Icons.Default.Lan,
-                        iconBgColor = AppTheme.colors.statusInfoBg,
-                        iconTintColor = AppTheme.colors.statusInfoText,
-                        title = "连接 (Connections)",
-                        subtitle = "查看活动与历史连接详情",
-                        onClick = onNavigateToConnections
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = "Profile",
+                            tint = AppTheme.colors.textPrimary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "配置文件 (Profile)",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AppTheme.colors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (activeProfile != null) "$activeProfileDisplayName (已激活)" else activeProfileDisplayName,
+                                fontSize = 13.sp,
+                                color = AppTheme.colors.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
 
-                    HomeMenuItem(
-                        icon = Icons.Default.Terminal,
-                        iconBgColor = AppTheme.colors.statusSuccessBg,
-                        iconTintColor = AppTheme.colors.statusSuccessText,
-                        title = "实时日志 (Logs)",
-                        subtitle = "查看运行日志",
-                        onClick = onNavigateToLogs
-                    )
-
-                    HomeMenuItem(
-                        icon = Icons.Default.Settings,
-                        iconBgColor = AppTheme.colors.statusInfoBg,
-                        iconTintColor = AppTheme.colors.statusInfoText,
-                        title = "设置 (Settings)",
-                        subtitle = "自定义代理与应用行为",
-                        onClick = onNavigateToSettings
-                    )
-
-                    HomeMenuItem(
-                        icon = Icons.Default.HelpOutline,
-                        iconBgColor = AppTheme.colors.statusWarningBg,
-                        iconTintColor = AppTheme.colors.statusWarningText,
-                        title = "帮助文档 (Help)",
-                        subtitle = "使用指南与常见问题",
-                        onClick = { showHelpDialog = true }
-                    )
-
-                    HomeMenuItem(
-                        icon = Icons.Default.Info,
-                        iconBgColor = AppTheme.colors.statusPurpleBg,
-                        iconTintColor = AppTheme.colors.statusPurpleText,
-                        title = "关于软件 (About)",
-                        subtitle = "版本 v1.18.0 - Clash Meta",
-                        onClick = { showAboutDialog = true }
-                    )
+                        // Pill capsule button: [ 更新 🔄 ]
+                        Surface(
+                            modifier = Modifier.clickable { updateCurrentProfile() },
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
+                            color = AppTheme.colors.surfaceVariant
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isUpdatingProfile) "更新中" else "更新",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = AppTheme.colors.textPrimary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Update",
+                                    tint = AppTheme.colors.textPrimary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.height(14.dp))
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 4. Bottom Menu Group Card (White Group Card)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
+                    border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        HomeMenuItem(
+                            icon = Icons.Default.Lan,
+                            iconBgColor = AppTheme.colors.statusInfoBg,
+                            iconTintColor = AppTheme.colors.statusInfoText,
+                            title = "连接 (Connections)",
+                            subtitle = "查看活动与历史连接详情",
+                            onClick = onNavigateToConnections
+                        )
+
+                        HomeMenuItem(
+                            icon = Icons.Default.Terminal,
+                            iconBgColor = AppTheme.colors.statusSuccessBg,
+                            iconTintColor = AppTheme.colors.statusSuccessText,
+                            title = "实时日志 (Logs)",
+                            subtitle = "查看运行日志",
+                            onClick = onNavigateToLogs
+                        )
+
+                        HomeMenuItem(
+                            icon = Icons.Default.Settings,
+                            iconBgColor = AppTheme.colors.statusInfoBg,
+                            iconTintColor = AppTheme.colors.statusInfoText,
+                            title = "设置 (Settings)",
+                            subtitle = "自定义代理与应用行为",
+                            onClick = onNavigateToSettings
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
@@ -905,54 +882,6 @@ fun ClashMainScreen(
         )
     }
 
-    // Help Dialog
-    if (showHelpDialog) {
-        AlertDialog(
-            onDismissRequest = { showHelpDialog = false },
-            title = { Text("帮助文档 (Help)", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    Text(
-                        text = "1. 如何开启代理？\n点击顶部的运行开关即可建立本地 VPN 隧道。\n\n" +
-                               "2. 如何切换代理模式？\n点击首页的【代理模式】卡片即可快速切换规则、全局或直连模式。\n\n" +
-                               "3. 如何选择节点？\n点击【当前节点】卡片即可进入节点列表进行测速和选择。\n\n" +
-                               "4. 如何添加配置？\n点击【配置文件】卡片进入配置管理，可下载订阅链接或导入本地 yaml 文件。",
-                        fontSize = 14.sp,
-                        color = AppTheme.colors.textSecondary,
-                        lineHeight = 20.sp
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showHelpDialog = false }) {
-                    Text("我知道了")
-                }
-            }
-        )
-    }
-
-    // About Dialog
-    if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            title = { Text("关于软件", fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(
-                        text = "Clash Meta for Android\n版本：v1.18.0 - Clash Meta\n基于 Mihomo (Clash.Meta) 与 EasyTier 核心驱动。\n提供快速、安全、稳定的全平台网络互联体验。",
-                        fontSize = 14.sp,
-                        color = AppTheme.colors.textSecondary,
-                        lineHeight = 22.sp
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text("关闭")
-                }
-            }
-        )
-    }
 }
 
 @Composable

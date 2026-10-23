@@ -54,9 +54,18 @@ class MainActivity : ComponentActivity() {
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as UnifiedVpnService.LocalBinder
-            vpnService = binder.getService()
+            val binder = service as? UnifiedVpnService.LocalBinder ?: return
+            val svc = binder.getService()
+            vpnService = svc
             isBound = true
+
+            // If another VPN is currently holding the system VPN permission, reset running state
+            if (VpnService.prepare(this@MainActivity) != null && svc.isRunning.value) {
+                _isVpnRunning.value = false
+                Intent(this@MainActivity, UnifiedVpnService::class.java).apply {
+                    action = UnifiedVpnService.ACTION_STOP_VPN
+                }.also { startService(it) }
+            }
 
             // Observe the flows
             lifecycleScope.launch {
@@ -70,6 +79,7 @@ class MainActivity : ComponentActivity() {
         override fun onServiceDisconnected(arg0: ComponentName) {
             isBound = false
             vpnService = null
+            _isVpnRunning.value = false
         }
     }
 
@@ -107,6 +117,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         AppSettingsRepository.applyExcludeFromRecents(this)
+        checkVpnStatus()
+    }
+
+    private fun checkVpnStatus() {
+        if (_isVpnRunning.value && VpnService.prepare(this) != null) {
+            _isVpnRunning.value = false
+            Intent(this, UnifiedVpnService::class.java).apply {
+                action = UnifiedVpnService.ACTION_STOP_VPN
+            }.also { startService(it) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -118,7 +138,6 @@ class MainActivity : ComponentActivity() {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
-        Mobile.testLogToLogcat("你好，Logcat！")
         setContent {
             MihotierTheme {
                 val navController = rememberNavController()
