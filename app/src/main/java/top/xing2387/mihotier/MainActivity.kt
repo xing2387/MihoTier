@@ -22,11 +22,10 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import mobile.Mobile
 import top.xing2387.mihotier.core.config.AppSettingsRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
-import top.xing2387.mihotier.ui.screens.AppSettingsScreen
 import top.xing2387.mihotier.ui.screens.AppSelectionScreen
+import top.xing2387.mihotier.ui.screens.AppSettingsScreen
 import top.xing2387.mihotier.ui.screens.ClashAppSelectionScreen
 import top.xing2387.mihotier.ui.screens.ClashConnectionsScreen
 import top.xing2387.mihotier.ui.screens.ClashLogsScreen
@@ -37,7 +36,9 @@ import top.xing2387.mihotier.ui.screens.ClashOverrideSettingsScreen
 import top.xing2387.mihotier.ui.screens.ClashProfileDetailScreen
 import top.xing2387.mihotier.ui.screens.ClashProfilesScreen
 import top.xing2387.mihotier.ui.screens.ClashProxyScreen
+import top.xing2387.mihotier.ui.screens.ClashQrScannerScreen
 import top.xing2387.mihotier.ui.screens.ClashSettingsScreen
+import top.xing2387.mihotier.ui.screens.EasyTierLogsScreen
 import top.xing2387.mihotier.ui.screens.EasyTierScreen
 import top.xing2387.mihotier.ui.theme.MihotierTheme
 
@@ -162,6 +163,12 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("easytier") {
                         EasyTierScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToLogs = { navController.navigate("easytier_logs") }
+                        )
+                    }
+                    composable("easytier_logs") {
+                        EasyTierLogsScreen(
                             onNavigateBack = { navController.popBackStack() }
                         )
                     }
@@ -217,7 +224,20 @@ class MainActivity : ComponentActivity() {
                         val profileId = backStackEntry.arguments?.getString("profileId")
                         ClashProfileDetailScreen(
                             profileId = profileId,
-                            onNavigateBack = { navController.popBackStack() }
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToScanner = { navController.navigate("clash_qr_scanner") },
+                            navController = navController
+                        )
+                    }
+                    composable("clash_qr_scanner") {
+                        ClashQrScannerScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onQrScanned = { result ->
+                                navController.previousBackStackEntry
+                                    ?.savedStateHandle
+                                    ?.set("scanned_qr_content", result)
+                                navController.popBackStack()
+                            }
                         )
                     }
                     composable("clash_settings") {
@@ -225,8 +245,7 @@ class MainActivity : ComponentActivity() {
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToNetwork = { navController.navigate("clash_settings_network") },
                             onNavigateToOverride = { navController.navigate("clash_settings_override") },
-                            onNavigateToMetaFeatures = { navController.navigate("clash_settings_meta") },
-                            onNavigateToAppSettings = { navController.navigate("app_settings") }
+                            onNavigateToMetaFeatures = { navController.navigate("clash_settings_meta") }
                         )
                     }
                     composable("app_settings") {

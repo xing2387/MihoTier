@@ -11,8 +11,8 @@ android {
         applicationId = "top.xing2387.mihotier"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10002
-        versionName = "1.0.2"
+        versionCode = 10004
+        versionName = "1.0.4"
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a"))
@@ -48,6 +48,9 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
+    implementation(project(":easytier"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -60,9 +63,9 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.okhttp)
-
-    implementation(project(":core"))
-    implementation(project(":easytier"))
-
-    implementation("io.github.Rosemoe.sora-editor:editor:0.23.6")
+    implementation(libs.sora.editor)
+    implementation(libs.zxing.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 }

@@ -179,6 +179,7 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
     {
         log::warn!("Failed to clear old instances before start: {:#}", e);
     }
+    std::thread::sleep(std::time::Duration::from_millis(50));
 
     match ctx
         .manager
@@ -189,6 +190,15 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
                 "EasyTier network instance launched successfully! instance_id={}",
                 instance_id
             );
+            // Brief check if instance failed immediately during component startup
+            std::thread::sleep(std::time::Duration::from_millis(80));
+            if let Some(instance) = ctx.manager.instance(instance_id) {
+                if let Some(err) = instance.latest_error() {
+                    log::error!("EasyTier startup failed immediately: {}", err);
+                    *LAST_ERROR.lock().unwrap() = err;
+                    return -4;
+                }
+            }
             *ACTIVE_META.lock().unwrap() = Some(ActiveConfigMeta {
                 config: parsed,
                 started_at_sec: now_unix_secs(),
@@ -293,7 +303,13 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
     };
 
     let Some((instance_id, info)) = collected.into_iter().next() else {
-        let stopped_json = json!({ "running": false }).to_string();
+        let err = LAST_ERROR.lock().unwrap().clone();
+        let inst_err = ctx.manager.instances().into_iter().find_map(|inst| inst.latest_error());
+        let final_err = inst_err.unwrap_or(err);
+        let stopped_json = json!({
+            "running": false,
+            "error_msg": final_err
+        }).to_string();
         return env
             .new_string(stopped_json)
             .expect("Couldn't create java string!")
@@ -398,7 +414,8 @@ pub extern "system" fn Java_top_xing2387_mihotier_easytier_EasyTierNative_native
             "rx_bytes_raw": rx_raw,
             "tx_bytes_raw": tx_raw,
             "cost": route.cost,
-            "is_relay": is_relayed || is_public_server,
+            "is_relay": is_relayed,
+            "is_public_server": is_public_server,
             "version": route.version,
         }));
 

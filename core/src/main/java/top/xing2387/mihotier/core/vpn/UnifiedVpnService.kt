@@ -58,6 +58,11 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
+    private fun setRunningState(running: Boolean) {
+        _isRunning.value = running
+        _isServiceRunning.value = running
+    }
+
     private val _isEasyTierTunActive = MutableStateFlow(false)
     val isEasyTierTunActive: StateFlow<Boolean> = _isEasyTierTunActive.asStateFlow()
 
@@ -121,6 +126,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     override fun onCreate() {
         super.onCreate()
+        activeService = this
         Log.i(TAG, "UnifiedVpnService created")
         EasyTierRepository.init(this)
         serviceScope.launch {
@@ -202,8 +208,8 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     }
 
     private suspend fun startVpnInternal() {
-        if (_isRunning.value) return
-        _isRunning.value = true
+        if (_isRunning.value && !isRestartingVpn) return
+        setRunningState(true)
 
         EasyTierRepository.init(this@UnifiedVpnService)
         val initialBridge = EasyTierRepository.getBridgeRoutingInfo(this@UnifiedVpnService)
@@ -497,34 +503,39 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     private fun ensureGlobalDefaultNode() {
         serviceScope.launch {
-            try {
-                val req = Request.Builder().url("http://127.0.0.1:9090/proxies/GLOBAL").get().build()
-                httpClient.newCall(req).execute().use { res ->
-                    if (!res.isSuccessful) return@use
-                    val obj = JSONObject(res.body?.string() ?: return@use)
-                    val now = obj.optString("now", "")
-                    if (now == "DIRECT" || now == "REJECT" || now == "EasyTier-内网桥接" || now.isBlank()) {
-                        val allArr = obj.optJSONArray("all") ?: return@use
-                        var candidate = ""
-                        for (i in 0 until allArr.length()) {
-                            val item = allArr.optString(i)
-                            if (item !in setOf("DIRECT", "REJECT", "EasyTier-内网桥接", "GLOBAL") && item.isNotBlank()) {
-                                candidate = item
-                                break
+            for (attempt in 1..5) {
+                delay(300)
+                try {
+                    val req = Request.Builder().url("http://127.0.0.1:9090/proxies/GLOBAL").get().build()
+                    httpClient.newCall(req).execute().use { res ->
+                        if (!res.isSuccessful) return@use
+                        val obj = JSONObject(res.body?.string() ?: return@use)
+                        val now = obj.optString("now", "")
+                        if (now == "DIRECT" || now == "REJECT" || now == "EasyTier-内网桥接" || now.isBlank()) {
+                            val allArr = obj.optJSONArray("all") ?: return@use
+                            var candidate = ""
+                            for (i in 0 until allArr.length()) {
+                                val item = allArr.optString(i)
+                                if (item !in setOf("DIRECT", "REJECT", "EasyTier-内网桥接", "GLOBAL") && item.isNotBlank()) {
+                                    candidate = item
+                                    break
+                                }
+                            }
+                            if (candidate.isNotBlank()) {
+                                val bodyStr = JSONObject().put("name", candidate).toString()
+                                val putReq = Request.Builder()
+                                    .url("http://127.0.0.1:9090/proxies/GLOBAL")
+                                    .put(bodyStr.toRequestBody("application/json".toMediaType()))
+                                    .build()
+                                httpClient.newCall(putReq).execute().close()
+                                Log.i(TAG, "Auto-selected default GLOBAL proxy node: $candidate")
                             }
                         }
-                        if (candidate.isNotBlank()) {
-                            val bodyStr = JSONObject().put("name", candidate).toString()
-                            val putReq = Request.Builder()
-                                .url("http://127.0.0.1:9090/proxies/GLOBAL")
-                                .put(bodyStr.toRequestBody("application/json".toMediaType()))
-                                .build()
-                            httpClient.newCall(putReq).execute().close()
-                            Log.i(TAG, "Auto-selected default GLOBAL proxy node: $candidate")
-                        }
                     }
+                    return@launch
+                } catch (_: Exception) {
+                    // Retry while Mihomo core is initializing
                 }
-            } catch (_: Exception) {
             }
         }
     }
@@ -778,6 +789,17 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
             if (_isEasyTierTunActive.value && easyTierVpnInterface != null && sig == appliedEasyTierStandaloneSignature) {
                 return
             }
+            if (!_isEasyTierTunActive.value && easyTierVpnInterface != null && sig == appliedEasyTierStandaloneSignature) {
+                val fd = easyTierVpnInterface?.fd ?: -1
+                if (fd > 0) {
+                    val retryRes = EasyTierNative.nativeSetTunFd(fd)
+                    if (retryRes == 0) {
+                        _isEasyTierTunActive.value = true
+                        Log.i(TAG, "EasyTier nativeSetTunFd retry succeeded: fd=$fd")
+                        return
+                    }
+                }
+            }
             if (VpnService.prepare(this@UnifiedVpnService) != null) {
                 Log.w(TAG, "VPN permission not granted yet; waiting for user approval before establishing EasyTier Standalone TUN")
                 return
@@ -805,9 +827,15 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
                     easyTierVpnInterface = pfd
                     val fd = pfd.fd
                     val res = EasyTierNative.nativeSetTunFd(fd)
-                    appliedEasyTierStandaloneSignature = sig
-                    _isEasyTierTunActive.value = true
-                    Log.i(TAG, "EasyTier Standalone TUN established: ip=${cfg.localIp}/${cfg.prefixLength}, routes=${cfg.routes}, fd=$fd, attachRes=$res")
+                    if (res == 0) {
+                        appliedEasyTierStandaloneSignature = sig
+                        _isEasyTierTunActive.value = true
+                        Log.i(TAG, "EasyTier Standalone TUN established: ip=${cfg.localIp}/${cfg.prefixLength}, routes=${cfg.routes}, fd=$fd, attachRes=$res")
+                    } else {
+                        Log.w(TAG, "EasyTier nativeSetTunFd($fd) failed with code $res, will retry on next tick")
+                        appliedEasyTierStandaloneSignature = ""
+                        _isEasyTierTunActive.value = false
+                    }
                 } else {
                     Log.e(TAG, "builder.establish() returned null for EasyTier Standalone TUN")
                 }
@@ -827,8 +855,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     }
 
     private suspend fun stopVpnInternal(shouldStopSelf: Boolean) {
-        if (!_isRunning.value) return
-        _isRunning.value = false
+        if (!_isRunning.value && !isRestartingVpn) return
+        if (!isRestartingVpn) {
+            setRunningState(false)
+        }
 
         try {
             // Stop Mihomo - Mobile.stop() will also close the fd on the Go side,
@@ -865,7 +895,7 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
     private fun handleVpnRevoked() {
         if (!_isRunning.value && !_isEasyTierTunActive.value && !isForegroundActive) return
         Log.i(TAG, "Handling VPN revoke: stopping Mihomo core, clearing notification, and stopping service")
-        _isRunning.value = false
+        setRunningState(false)
         _isEasyTierTunActive.value = false
         appliedEasyTierStandaloneSignature = ""
 
@@ -897,7 +927,10 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
 
     override fun onDestroy() {
         super.onDestroy()
-        _isRunning.value = false
+        if (activeService == this) {
+            activeService = null
+        }
+        setRunningState(false)
         try {
             Mobile.stop()
         } catch (_: Exception) {}
@@ -922,5 +955,34 @@ class UnifiedVpnService : VpnService(), SocketProtectCallback {
         const val ACTION_SYNC_EASYTIER_TUN = "top.xing2387.mihotier.action.SYNC_EASYTIER_TUN"
         const val NOTIFICATION_CHANNEL_ID = "mihotier_vpn_traffic"
         const val NOTIFICATION_ID = 1001
+
+        @Volatile
+        private var activeService: UnifiedVpnService? = null
+
+        fun resetEasyTierTunSignature() {
+            activeService?.let { service ->
+                service.appliedEasyTierStandaloneSignature = ""
+                service._isEasyTierTunActive.value = false
+            }
+        }
+
+        private val _isServiceRunning = MutableStateFlow(false)
+        val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+
+        fun isRunning(): Boolean = _isServiceRunning.value
+
+        fun reloadIfRunning(context: Context) {
+            if (_isServiceRunning.value) {
+                try {
+                    val intent = Intent(context, UnifiedVpnService::class.java).apply {
+                        action = ACTION_RESTART_VPN
+                    }
+                    context.startService(intent)
+                    Log.i(TAG, "Triggered ACTION_RESTART_VPN for running service")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to send ACTION_RESTART_VPN", e)
+                }
+            }
+        }
     }
 }

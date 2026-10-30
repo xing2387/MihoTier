@@ -93,6 +93,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.xing2387.mihotier.core.config.ProfileRepository
+import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.theme.AppTheme
 import top.xing2387.mihotier.ui.theme.appTextFieldColors
 import java.io.File
@@ -278,6 +280,10 @@ fun ClashConfigYamlEditorScreen(
             lastSavedModified = configFile.lastModified()
             lineCount = editorView?.text?.lineCount ?: (if (currentText.isEmpty()) 0 else currentText.count { it == '\n' } + 1)
             charCount = currentText.length
+            val active = ProfileRepository.getActiveProfile()
+            if (active != null && configFile.name == "${active.id}.yaml") {
+                UnifiedVpnService.reloadIfRunning(context)
+            }
             if (showToast) {
                 Toast.makeText(context, "配置文件已保存", Toast.LENGTH_SHORT).show()
             }

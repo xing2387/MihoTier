@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ import org.json.JSONObject
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.EasyTierRepository
 import top.xing2387.mihotier.core.config.OverrideSettingsRepository
+import top.xing2387.mihotier.core.config.ProfileRepository
 import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.screens.ProxyMode
 import top.xing2387.mihotier.ui.screens.ProxyNode
@@ -94,6 +96,20 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
 
     init {
         handleIntent(ClashProxyIntent.FetchProxies)
+        viewModelScope.launch {
+            var lastActiveId = ProfileRepository.getActiveProfile()?.id
+            var lastUpdated = ProfileRepository.getActiveProfile()?.lastUpdated ?: 0L
+            ProfileRepository.profiles.collect { profiles ->
+                val active = profiles.find { it.isActive }
+                val activeId = active?.id
+                val updated = active?.lastUpdated ?: 0L
+                if (activeId != lastActiveId || updated != lastUpdated) {
+                    lastActiveId = activeId
+                    lastUpdated = updated
+                    fetchProxies(silently = false)
+                }
+            }
+        }
     }
 
     fun handleIntent(intent: ClashProxyIntent) {
@@ -145,128 +161,143 @@ class ClashProxyViewModel(application: Application) : AndroidViewModel(applicati
             if (!silently) {
                 _state.update { it.copy(isLoading = true) }
             }
-            try {
-                // 1. Fetch current config to check active mode
+            var lastError: String? = null
+            for (attempt in 1..4) {
                 try {
-                    val configReq = Request.Builder()
-                        .url("http://127.0.0.1:9090/configs")
-                        .build()
-                    client.newCall(configReq).execute().use { resp ->
-                        if (resp.isSuccessful) {
-                            val body = resp.body?.string()
-                            if (body != null) {
-                                val cfgJson = JSONObject(body)
-                                val rawModeStr = cfgJson.optString("mode", "").lowercase()
-                                val app = getApplication<Application>()
-                                val modeStr = if (EasyTierRepository.getBridgeRoutingInfo(app).enabled &&
-                                    ConfigManager.getConfiguredClashMode(app) == "global"
-                                ) {
-                                    "global"
-                                } else {
-                                    rawModeStr
+                    // 1. Fetch current config to check active mode
+                    try {
+                        val configReq = Request.Builder()
+                            .url("http://127.0.0.1:9090/configs")
+                            .build()
+                        client.newCall(configReq).execute().use { resp ->
+                            if (resp.isSuccessful) {
+                                val body = resp.body?.string()
+                                if (body != null) {
+                                    val cfgJson = JSONObject(body)
+                                    val rawModeStr = cfgJson.optString("mode", "").lowercase()
+                                    val app = getApplication<Application>()
+                                    val modeStr = if (EasyTierRepository.getBridgeRoutingInfo(app).enabled &&
+                                        ConfigManager.getConfiguredClashMode(app) == "global"
+                                    ) {
+                                        "global"
+                                    } else {
+                                        rawModeStr
+                                    }
+                                    val mode = when (modeStr) {
+                                        "direct" -> ProxyMode.Direct
+                                        "global" -> ProxyMode.Global
+                                        "rule" -> ProxyMode.Rule
+                                        else -> ProxyMode.Unchanged
+                                    }
+                                    _state.update { it.copy(proxyMode = mode) }
                                 }
-                                val mode = when (modeStr) {
-                                    "direct" -> ProxyMode.Direct
-                                    "global" -> ProxyMode.Global
-                                    "rule" -> ProxyMode.Rule
-                                    else -> ProxyMode.Unchanged
-                                }
-                                _state.update { it.copy(proxyMode = mode) }
                             }
+                        }
+                    } catch (_: Exception) {
+                        // Ignore config fetch error
+                    }
+
+                    // 2. Fetch proxies
+                    val request = Request.Builder()
+                        .url("http://127.0.0.1:9090/proxies")
+                        .build()
+
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val responseBody = response.body?.string()
+                            if (responseBody != null) {
+                                val proxiesObj = JSONObject(responseBody).getJSONObject("proxies")
+                                val discoveredGroups = mutableMapOf<String, ProxyGroup>()
+                                val proxiesDetails = mutableMapOf<String, ProxyDetail>()
+
+                                val keys = proxiesObj.keys()
+                                while (keys.hasNext()) {
+                                    val key = keys.next()
+                                    val obj = proxiesObj.getJSONObject(key)
+                                    val name = obj.optString("name", key)
+                                    val type = obj.optString("type", "Unknown")
+
+                                    val history = obj.optJSONArray("history")
+                                    val latency = if (history != null && history.length() > 0) {
+                                        val last = history.getJSONObject(history.length() - 1)
+                                        last.optInt("delay", 0)
+                                    } else null
+
+                                    proxiesDetails[name] = ProxyDetail(type = type, latency = latency)
+
+                                    val allArray = obj.optJSONArray("all")
+                                    if (allArray != null) {
+                                        val allList = mutableListOf<String>()
+                                        for (i in 0 until allArray.length()) {
+                                            allList.add(allArray.getString(i))
+                                        }
+                                        discoveredGroups[name] = ProxyGroup(
+                                            name = name,
+                                            type = type,
+                                            now = obj.optString("now", ""),
+                                            all = allList
+                                        )
+                                    }
+                                }
+
+                                // Read YAML config to order groups by their appearance in proxy-groups
+                                val orderedGroupNames = mutableListOf<String>()
+                                val yamlText = try {
+                                    ConfigManager.getConfig(getApplication())
+                                } catch (e: Exception) {
+                                    ""
+                                }
+                                val yamlGroups = parseGroupNamesFromYaml(yamlText)
+                                for (g in yamlGroups) {
+                                    if (discoveredGroups.containsKey(g) && !orderedGroupNames.contains(g)) {
+                                        orderedGroupNames.add(g)
+                                    }
+                                }
+                                // Add any other discovered groups (e.g. GLOBAL)
+                                for (g in discoveredGroups.keys) {
+                                    if (!orderedGroupNames.contains(g)) {
+                                        orderedGroupNames.add(g)
+                                    }
+                                }
+
+                                val finalGroups = orderedGroupNames.mapNotNull { discoveredGroups[it] }
+                                val currentSelected = _state.value.selectedGroupName
+                                val newSelectedGroup = if (currentSelected in orderedGroupNames) {
+                                    currentSelected
+                                } else {
+                                    finalGroups.firstOrNull()?.name ?: ""
+                                }
+
+                                _state.update {
+                                    it.copy(
+                                        groups = finalGroups,
+                                        selectedGroupName = newSelectedGroup,
+                                        allProxiesDetails = proxiesDetails,
+                                        isLoading = false,
+                                        error = null
+                                    )
+                                }
+                                return@launch
+                            } else {
+                                lastError = "Empty response"
+                            }
+                        } else {
+                            lastError = "Failed to fetch proxies: ${response.code}"
                         }
                     }
                 } catch (e: Exception) {
-                    // Ignore config fetch error
+                    lastError = e.message ?: "Unknown error"
                 }
 
-                // 2. Fetch proxies
-                val request = Request.Builder()
-                    .url("http://127.0.0.1:9090/proxies")
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        if (responseBody != null) {
-                            val proxiesObj = JSONObject(responseBody).getJSONObject("proxies")
-                            val discoveredGroups = mutableMapOf<String, ProxyGroup>()
-                            val proxiesDetails = mutableMapOf<String, ProxyDetail>()
-
-                            val keys = proxiesObj.keys()
-                            while (keys.hasNext()) {
-                                val key = keys.next()
-                                val obj = proxiesObj.getJSONObject(key)
-                                val name = obj.optString("name", key)
-                                val type = obj.optString("type", "Unknown")
-
-                                val history = obj.optJSONArray("history")
-                                val latency = if (history != null && history.length() > 0) {
-                                    val last = history.getJSONObject(history.length() - 1)
-                                    last.optInt("delay", 0)
-                                } else null
-
-                                proxiesDetails[name] = ProxyDetail(type = type, latency = latency)
-
-                                val allArray = obj.optJSONArray("all")
-                                if (allArray != null) {
-                                    val allList = mutableListOf<String>()
-                                    for (i in 0 until allArray.length()) {
-                                        allList.add(allArray.getString(i))
-                                    }
-                                    discoveredGroups[name] = ProxyGroup(
-                                        name = name,
-                                        type = type,
-                                        now = obj.optString("now", ""),
-                                        all = allList
-                                    )
-                                }
-                            }
-
-                            // Read YAML config to order groups by their appearance in proxy-groups
-                            val orderedGroupNames = mutableListOf<String>()
-                            val yamlText = try {
-                                ConfigManager.getConfig(getApplication())
-                            } catch (e: Exception) {
-                                ""
-                            }
-                            val yamlGroups = parseGroupNamesFromYaml(yamlText)
-                            for (g in yamlGroups) {
-                                if (discoveredGroups.containsKey(g) && !orderedGroupNames.contains(g)) {
-                                    orderedGroupNames.add(g)
-                                }
-                            }
-                            // Add any other discovered groups (e.g. GLOBAL)
-                            for (g in discoveredGroups.keys) {
-                                if (!orderedGroupNames.contains(g)) {
-                                    orderedGroupNames.add(g)
-                                }
-                            }
-
-                            val finalGroups = orderedGroupNames.mapNotNull { discoveredGroups[it] }
-                            val currentSelected = _state.value.selectedGroupName
-                            val newSelectedGroup = if (currentSelected in orderedGroupNames) {
-                                currentSelected
-                            } else {
-                                finalGroups.firstOrNull()?.name ?: ""
-                            }
-
-                            _state.update {
-                                it.copy(
-                                    groups = finalGroups,
-                                    selectedGroupName = newSelectedGroup,
-                                    allProxiesDetails = proxiesDetails,
-                                    isLoading = false
-                                )
-                            }
-                        } else {
-                            _state.update { it.copy(error = "Empty response", isLoading = false) }
-                        }
-                    } else {
-                        _state.update { it.copy(error = "Failed to fetch proxies: ${response.code}", isLoading = false) }
-                    }
+                if (attempt < 4) {
+                    delay(attempt * 300L)
                 }
-            } catch (e: Exception) {
-                _state.update { it.copy(error = "Error: ${e.message}", isLoading = false) }
+            }
+
+            if (!silently) {
+                _state.update { it.copy(error = "Error: $lastError", isLoading = false) }
+            } else {
+                _state.update { it.copy(isLoading = false) }
             }
         }
     }

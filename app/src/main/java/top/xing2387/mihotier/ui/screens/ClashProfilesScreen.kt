@@ -1,10 +1,12 @@
 package top.xing2387.mihotier.ui.screens
 
 import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,13 +25,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,7 +42,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
@@ -58,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,7 +73,9 @@ import kotlinx.coroutines.launch
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.Profile
 import top.xing2387.mihotier.core.config.ProfileRepository
+import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import top.xing2387.mihotier.ui.theme.AppTheme
+import top.xing2387.mihotier.ui.utils.QrCodeUtils
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +95,8 @@ fun ClashProfilesScreen(
     val coroutineScope = rememberCoroutineScope()
     var showShareChoiceDialog by remember { mutableStateOf(false) }
     var profileToShare by remember { mutableStateOf<Profile?>(null) }
+    var showQrCodeDialog by remember { mutableStateOf(false) }
+    var profileForQrCode by remember { mutableStateOf<Profile?>(null) }
 
     Scaffold(
         topBar = {
@@ -120,15 +128,21 @@ fun ClashProfilesScreen(
                             coroutineScope.launch {
                                 Toast.makeText(context, "正在更新订阅配置...", Toast.LENGTH_SHORT).show()
                                 var successCount = 0
+                                var activeUpdated = false
                                 for (prof in remoteProfiles) {
                                     val res = ConfigManager.downloadAndSaveConfig(context, prof.url, prof.id)
                                     if (res.isSuccess) {
+                                        if (prof.isActive) activeUpdated = true
                                         ProfileRepository.saveProfile(
                                             context,
-                                            prof.copy(lastUpdated = System.currentTimeMillis())
+                                            prof.copy(lastUpdated = System.currentTimeMillis()),
+                                            reloadIfActive = false
                                         )
                                         successCount++
                                     }
+                                }
+                                if (activeUpdated) {
+                                    UnifiedVpnService.reloadIfRunning(context)
                                 }
                                 Toast.makeText(
                                     context,
@@ -184,7 +198,10 @@ fun ClashProfilesScreen(
                     timeAgo = formatTimeAgo(profile.lastUpdated),
                     isActive = profile.isActive,
                     onCardClick = {
-                        ProfileRepository.setActiveProfile(context, profile.id)
+                        if (!profile.isActive) {
+                            ProfileRepository.setActiveProfile(context, profile.id)
+                            Toast.makeText(context, "已切换配置: ${profile.name}", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     onUpdateClick = {
                         if (profile.url.isBlank()) {
@@ -229,69 +246,168 @@ fun ClashProfilesScreen(
             val targetProfile = profileToShare!!
             AlertDialog(
                 onDismissRequest = { showShareChoiceDialog = false },
-                title = { Text("Share Profile", fontWeight = FontWeight.Bold) },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = AppTheme.colors.cardBackground,
+                title = {
+                    Text(
+                        text = "分享配置",
+                        fontWeight = FontWeight.Bold,
+                        color = AppTheme.colors.textPrimary,
+                        fontSize = 18.sp
+                    )
+                },
                 text = {
-                    Column(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
-                            text = "Choose how to share \"${targetProfile.name}\":",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(bottom = 12.dp)
+                            text = "选择分享 \"${targetProfile.name}\" 的方式：",
+                            fontSize = 13.sp,
+                            color = AppTheme.colors.textSecondary,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
+
+                        // Option 1: File
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     showShareChoiceDialog = false
                                     shareProfileFile(context, targetProfile)
-                                }
-                                .padding(vertical = 10.dp),
-                            color = Color.Transparent
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppTheme.colors.surfaceSubtle,
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Folder,
-                                    contentDescription = "Share File",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column {
-                                    Text("Share File", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = AppTheme.colors.brandPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Folder,
+                                            contentDescription = "分享文件",
+                                            tint = AppTheme.colors.brandPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        "Share configuration file (.yaml)",
+                                        text = "分享文件",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AppTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        text = "导出并分享配置文件 (.yaml)",
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                        color = AppTheme.colors.textSecondary
                                     )
                                 }
                             }
                         }
+
+                        // Option 2: URL
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     showShareChoiceDialog = false
                                     shareProfileUrl(context, targetProfile.url)
-                                }
-                                .padding(vertical = 10.dp),
-                            color = Color.Transparent
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppTheme.colors.surfaceSubtle,
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Link,
-                                    contentDescription = "Share URL",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column {
-                                    Text("Share URL", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = AppTheme.colors.brandPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Link,
+                                            contentDescription = "分享链接",
+                                            tint = AppTheme.colors.brandPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        targetProfile.url,
+                                        text = "分享链接",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AppTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        text = targetProfile.url,
                                         fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                        color = AppTheme.colors.textSecondary,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+
+                        // Option 3: QR Code
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val prof = targetProfile
+                                    showShareChoiceDialog = false
+                                    profileForQrCode = prof
+                                    showQrCodeDialog = true
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppTheme.colors.surfaceSubtle,
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = AppTheme.colors.brandPrimary.copy(alpha = 0.12f),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.QrCode,
+                                            contentDescription = "二维码",
+                                            tint = AppTheme.colors.brandPrimary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "二维码",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = AppTheme.colors.textPrimary
+                                    )
+                                    Text(
+                                        text = "展示订阅链接二维码，方便扫码导入",
+                                        fontSize = 12.sp,
+                                        color = AppTheme.colors.textSecondary
                                     )
                                 }
                             }
@@ -301,7 +417,129 @@ fun ClashProfilesScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { showShareChoiceDialog = false }) {
-                        Text("Cancel")
+                        Text("取消", color = AppTheme.colors.brandPrimary)
+                    }
+                }
+            )
+        }
+
+        if (showQrCodeDialog && profileForQrCode != null) {
+            val qrProfile = profileForQrCode!!
+            val qrBitmap = remember(qrProfile.url) {
+                QrCodeUtils.generateQrCodeBitmap(qrProfile.url, sizePx = 700)
+            }
+
+            AlertDialog(
+                onDismissRequest = { showQrCodeDialog = false },
+                shape = RoundedCornerShape(24.dp),
+                containerColor = AppTheme.colors.cardBackground,
+                title = {
+                    Column {
+                        Text(
+                            text = "配置二维码",
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.textPrimary,
+                            fontSize = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = qrProfile.name,
+                            fontSize = 13.sp,
+                            color = AppTheme.colors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // QR Code container - pure white card so dark mode doesn't invert QR code contrast
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            if (qrBitmap != null) {
+                                Image(
+                                    bitmap = qrBitmap.asImageBitmap(),
+                                    contentDescription = "订阅二维码",
+                                    modifier = Modifier
+                                        .size(230.dp)
+                                        .padding(14.dp)
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(230.dp)
+                                        .padding(14.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "生成二维码失败",
+                                        color = Color.Gray,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // URL display and copy box
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = AppTheme.colors.surfaceSubtle,
+                            border = BorderStroke(1.dp, AppTheme.colors.cardBorder),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    clipboard.setPrimaryClip(ClipData.newPlainText("URL", qrProfile.url))
+                                    Toast.makeText(context, "已复制链接到剪贴板", Toast.LENGTH_SHORT).show()
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = qrProfile.url,
+                                    fontSize = 11.sp,
+                                    color = AppTheme.colors.textSecondary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "复制链接",
+                                    tint = AppTheme.colors.brandPrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("URL", qrProfile.url))
+                            Toast.makeText(context, "已复制链接到剪贴板", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text("复制链接", color = AppTheme.colors.brandPrimary, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showQrCodeDialog = false }) {
+                        Text("关闭", color = AppTheme.colors.textSecondary)
                     }
                 }
             )
@@ -431,7 +669,7 @@ fun ProfileCard(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "Update",
+                                text = "更新",
                                 fontSize = 15.sp,
                                 color = AppTheme.colors.textPrimary
                             )
@@ -439,7 +677,7 @@ fun ProfileCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Update",
+                                contentDescription = "更新",
                                 tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -452,7 +690,7 @@ fun ProfileCard(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "Edit",
+                                text = "编辑",
                                 fontSize = 15.sp,
                                 color = AppTheme.colors.textPrimary
                             )
@@ -460,7 +698,7 @@ fun ProfileCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit",
+                                contentDescription = "编辑",
                                 tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -473,15 +711,15 @@ fun ProfileCard(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "Share",
+                                text = "分享",
                                 fontSize = 15.sp,
                                 color = AppTheme.colors.textPrimary
                             )
                         },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.CloudUpload,
-                                contentDescription = "Share",
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "分享",
                                 tint = AppTheme.colors.textPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -494,7 +732,7 @@ fun ProfileCard(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "Delete",
+                                text = "删除",
                                 fontSize = 15.sp,
                                 color = Color(0xFFDC2626)
                             )
@@ -502,7 +740,7 @@ fun ProfileCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
+                                contentDescription = "删除",
                                 tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(20.dp)
                             )
@@ -521,7 +759,7 @@ fun ProfileCard(
 private fun shareProfileFile(context: Context, profile: Profile) {
     val configFile = File(File(context.filesDir, "config"), "${profile.id}.yaml")
     if (!configFile.exists()) {
-        Toast.makeText(context, "Config file does not exist", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "配置文件不存在", Toast.LENGTH_SHORT).show()
         return
     }
     try {
@@ -543,13 +781,13 @@ private fun shareProfileFile(context: Context, profile: Profile) {
             clipData = ClipData.newRawUri(profile.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        val chooser = Intent.createChooser(sendIntent, "Share Profile File").apply {
+        val chooser = Intent.createChooser(sendIntent, "分享配置文件").apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(chooser)
     } catch (e: Exception) {
-        Toast.makeText(context, "Failed to share file: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "分享文件失败: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -559,12 +797,12 @@ private fun shareProfileUrl(context: Context, url: String) {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, url)
         }
-        val chooser = Intent.createChooser(sendIntent, "Share URL").apply {
+        val chooser = Intent.createChooser(sendIntent, "分享订阅链接").apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(chooser)
     } catch (e: Exception) {
-        Toast.makeText(context, "Failed to share URL: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "分享链接失败: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }
 

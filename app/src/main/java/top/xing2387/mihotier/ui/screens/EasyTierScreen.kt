@@ -48,10 +48,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -114,7 +116,8 @@ import top.xing2387.mihotier.ui.theme.appTextFieldColors
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EasyTierScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToLogs: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -155,7 +158,10 @@ fun EasyTierScreen(
     var advancedExpanded by remember { mutableStateOf(false) }
     var portForwardExpanded by remember { mutableStateOf(false) }
 
-    val isCurrentProfileRunning = runtimeState.isRunning && runtimeState.runningProfileId == currentProfile.id
+    val runningProfile by EasyTierRepository.runningProfile.collectAsState()
+    val isCurrentProfileRunning = runtimeState.isRunning && (runningProfile?.id == currentProfile.id || runtimeState.runningProfileId == currentProfile.id)
+    val isConfigModified = isCurrentProfileRunning && runningProfile != null && runningProfile != currentProfile
+    val isOtherProfileRunning = runtimeState.isRunning && runningProfile != null && runningProfile?.id != currentProfile.id
 
     fun doStartNetwork(switchToStatusTab: Boolean) {
         val res = EasyTierRepository.startNetwork(context, currentProfile)
@@ -171,24 +177,55 @@ fun EasyTierScreen(
         }
     }
 
+    fun doRestartNetwork(switchToStatusTab: Boolean) {
+        val res = EasyTierRepository.restartNetwork(context, currentProfile)
+        if (res.isSuccess) {
+            Toast.makeText(context, "EasyTier 组网已更新并重启", Toast.LENGTH_SHORT).show()
+            if (switchToStatusTab) activeTab = 1
+        } else {
+            Toast.makeText(
+                context,
+                "重启失败: ${res.exceptionOrNull()?.message ?: "配置有误"}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     var pendingSwitchTabOnStart by remember { mutableStateOf(false) }
+    var pendingActionIsRestart by remember { mutableStateOf(false) }
     val vpnPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            doStartNetwork(pendingSwitchTabOnStart)
+            if (pendingActionIsRestart) {
+                doRestartNetwork(pendingSwitchTabOnStart)
+            } else {
+                doStartNetwork(pendingSwitchTabOnStart)
+            }
         } else {
             Toast.makeText(context, "未授予 VPN 权限，无法建立虚拟网卡", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun launchStartEasyTier(switchToStatusTab: Boolean) {
+        pendingActionIsRestart = false
         val prepareIntent = VpnService.prepare(context)
         if (prepareIntent != null) {
             pendingSwitchTabOnStart = switchToStatusTab
             vpnPermissionLauncher.launch(prepareIntent)
         } else {
             doStartNetwork(switchToStatusTab)
+        }
+    }
+
+    fun launchRestartEasyTier(switchToStatusTab: Boolean) {
+        pendingActionIsRestart = true
+        val prepareIntent = VpnService.prepare(context)
+        if (prepareIntent != null) {
+            pendingSwitchTabOnStart = switchToStatusTab
+            vpnPermissionLauncher.launch(prepareIntent)
+        } else {
+            doRestartNetwork(switchToStatusTab)
         }
     }
 
@@ -234,6 +271,13 @@ fun EasyTierScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToLogs) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = "事件日志",
+                            tint = AppTheme.colors.textPrimary
+                        )
+                    }
                     IconButton(onClick = { showDualCoreGuideDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Hub,
@@ -514,7 +558,135 @@ fun EasyTierScreen(
                 }
             }
 
+            // Global Error Banner (shown on both tabs if there is an active error)
+            if (runtimeState.lastError.isNotBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = AppTheme.colors.statusDangerBg,
+                    border = BorderStroke(1.dp, AppTheme.colors.statusDangerText.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            tint = AppTheme.colors.statusDangerText,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "组网运行提示 / 错误",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AppTheme.colors.statusDangerText
+                            )
+                            Text(
+                                text = runtimeState.lastError,
+                                fontSize = 11.sp,
+                                color = AppTheme.colors.statusDangerText
+                            )
+                        }
+                        IconButton(
+                            onClick = { EasyTierRepository.clearLastError() },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "清除",
+                                tint = AppTheme.colors.textSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
             if (activeTab == 0) {
+                // Running Config Modified Banner (When user edited config while running)
+                if (isCurrentProfileRunning && isConfigModified) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = AppTheme.colors.statusWarningBg,
+                        border = BorderStroke(1.dp, AppTheme.colors.statusWarningText.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = AppTheme.colors.statusWarningText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "组网配置已修改",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppTheme.colors.statusWarningText
+                                )
+                                Text(
+                                    text = "当前节点仍在使用修改前的旧配置运行，需重启后生效",
+                                    fontSize = 11.sp,
+                                    color = AppTheme.colors.textSecondary
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Button(
+                                onClick = { launchRestartEasyTier(switchToStatusTab = true) },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("立即重启", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // Other Profile Running Banner
+                if (isOtherProfileRunning) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = AppTheme.colors.statusInfoBg,
+                        border = BorderStroke(1.dp, AppTheme.colors.statusInfoText.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = AppTheme.colors.statusInfoText,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "其他网络正在运行中",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppTheme.colors.statusInfoText
+                                )
+                                Text(
+                                    text = "当前后台正在运行 [${runningProfile?.instanceName}]，点击下方按钮可切换启动当前网络",
+                                    fontSize = 11.sp,
+                                    color = AppTheme.colors.textSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // =========================================================================
                 // TAB 0: 1. 网络配置 (Config Network)
                 // =========================================================================
@@ -574,7 +746,13 @@ fun EasyTierScreen(
                                 Switch(
                                     checked = currentProfile.dhcp,
                                     onCheckedChange = { checked ->
-                                        updateCurrent { it.copy(dhcp = checked) }
+                                        updateCurrent {
+                                            var updated = it.copy(dhcp = checked)
+                                            if (!checked && updated.virtualIpv4.isBlank()) {
+                                                updated = updated.copy(virtualIpv4 = "10.144.144.1")
+                                            }
+                                            updated
+                                        }
                                     },
                                     colors = SwitchDefaults.colors(
                                         checkedThumbColor = Color.White,
@@ -585,6 +763,7 @@ fun EasyTierScreen(
                         }
 
                         // Virtual IPv4 + /24 CIDR Prefix Row
+                        val isIpInvalid = !currentProfile.dhcp && (currentProfile.virtualIpv4.isBlank() || !EasyTierRepository.isValidIpv4(currentProfile.virtualIpv4))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -598,8 +777,12 @@ fun EasyTierScreen(
                                     }
                                 },
                                 enabled = !currentProfile.dhcp,
+                                isError = isIpInvalid,
                                 label = { Text("虚拟 IPv4 地址 (Virtual IPv4)") },
                                 placeholder = { Text("例如: 10.144.144.1") },
+                                supportingText = if (isIpInvalid) {
+                                    { Text("关闭 DHCP 时必须指定有效 IPv4 地址 (例如 10.144.144.1)", color = AppTheme.colors.statusDangerText) }
+                                } else null,
                                 singleLine = true,
                                 colors = appTextFieldColors(),
                                 modifier = Modifier.weight(1f),
@@ -755,20 +938,64 @@ fun EasyTierScreen(
                         // Networking Method Detail Area
                         when (currentProfile.networkingMethod) {
                             NetworkingMethod.PUBLIC_SERVER -> {
-                                OutlinedTextField(
-                                    value = currentProfile.publicServerUrl,
-                                    onValueChange = { url -> updateCurrent { it.copy(publicServerUrl = url) } },
-                                    label = { Text("公共服务器地址 (Public Server)") },
-                                    placeholder = { Text("tcp://public.easytier.top:11010") },
-                                    singleLine = true,
-                                    colors = appTextFieldColors(),
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp)
-                                )
+                                val isPublicServerBlank = currentProfile.publicServerUrl.isBlank()
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    OutlinedTextField(
+                                        value = currentProfile.publicServerUrl,
+                                        onValueChange = { url -> updateCurrent { it.copy(publicServerUrl = url) } },
+                                        isError = isPublicServerBlank,
+                                        label = { Text("公共服务器地址 (Public Server)") },
+                                        placeholder = { Text("tcp://public.easytier.top:11010") },
+                                        supportingText = if (isPublicServerBlank) {
+                                            { Text("公共服务器地址不能为空", color = AppTheme.colors.statusDangerText) }
+                                        } else null,
+                                        singleLine = true,
+                                        colors = appTextFieldColors(),
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    if (isPublicServerBlank || currentProfile.publicServerUrl.trim() != "tcp://public.easytier.top:11010") {
+                                        TextButton(
+                                            onClick = {
+                                                updateCurrent { it.copy(publicServerUrl = "tcp://public.easytier.top:11010") }
+                                            },
+                                            modifier = Modifier.align(Alignment.End)
+                                        ) {
+                                            Text("恢复官方公共服务器 (public.easytier.top)", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
                             }
 
                             NetworkingMethod.MANUAL -> {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (currentProfile.peerUrls.isEmpty()) {
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = AppTheme.colors.statusWarningBg,
+                                            border = BorderStroke(1.dp, AppTheme.colors.statusWarningText.copy(alpha = 0.3f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Info,
+                                                    contentDescription = null,
+                                                    tint = AppTheme.colors.statusWarningText,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "手动指定模式需要至少添加一个对端节点 (例如 tcp://x.x.x.x:11010)，否则无法与其他设备连通",
+                                                    fontSize = 12.sp,
+                                                    color = AppTheme.colors.statusWarningText
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     // Removable Peer URL Chips (Just like the screenshot!)
                                     if (currentProfile.peerUrls.isNotEmpty()) {
                                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -836,14 +1063,11 @@ fun EasyTierScreen(
                                             onClick = {
                                                 val trimmed = newPeerUrlInput.trim()
                                                 if (trimmed.isNotBlank()) {
-                                                    if (!trimmed.contains("://")) {
-                                                        Toast.makeText(context, "请包含协议头，如 tcp:// 或 udp://", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        updateCurrent {
-                                                            it.copy(peerUrls = (it.peerUrls + trimmed).distinct())
-                                                        }
-                                                        newPeerUrlInput = ""
+                                                    val finalUri = if (!trimmed.contains("://")) "tcp://$trimmed" else trimmed
+                                                    updateCurrent {
+                                                        it.copy(peerUrls = (it.peerUrls + finalUri).distinct())
                                                     }
+                                                    newPeerUrlInput = ""
                                                 }
                                             },
                                             modifier = Modifier.size(48.dp),
@@ -1461,36 +1685,113 @@ fun EasyTierScreen(
                     }
                 }
 
-                // 4. Primary Run / Stop Network Pill Button (Matches Screenshot!)
-                Button(
-                    onClick = {
-                        if (isCurrentProfileRunning) {
-                            EasyTierRepository.stopNetwork()
-                            Toast.makeText(context, "已停止 EasyTier 组网", Toast.LENGTH_SHORT).show()
-                        } else {
-                            launchStartEasyTier(switchToStatusTab = true)
+                // 4. Primary Run / Stop / Restart Network Pill Button
+                if (isCurrentProfileRunning && isConfigModified) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { launchRestartEasyTier(switchToStatusTab = true) },
+                            modifier = Modifier
+                                .weight(2f)
+                                .height(54.dp),
+                            shape = RoundedCornerShape(27.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "保存并重启组网",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(27.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isCurrentProfileRunning) AppTheme.colors.statusDangerText else AppTheme.colors.brandPrimary
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (isCurrentProfileRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isCurrentProfileRunning) "停止组网 (Stop Network)" else "启动组网 (Run Network)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+
+                        Button(
+                            onClick = {
+                                EasyTierRepository.stopNetwork()
+                                Toast.makeText(context, "已停止 EasyTier 组网", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(54.dp),
+                            shape = RoundedCornerShape(27.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.statusDangerText)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "停止",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                } else if (isOtherProfileRunning) {
+                    Button(
+                        onClick = { launchRestartEasyTier(switchToStatusTab = true) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(27.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "切换并启动当前网络",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            if (isCurrentProfileRunning) {
+                                EasyTierRepository.stopNetwork()
+                                Toast.makeText(context, "已停止 EasyTier 组网", Toast.LENGTH_SHORT).show()
+                            } else {
+                                launchStartEasyTier(switchToStatusTab = true)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                        shape = RoundedCornerShape(27.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isCurrentProfileRunning) AppTheme.colors.statusDangerText else AppTheme.colors.brandPrimary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (isCurrentProfileRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isCurrentProfileRunning) "停止组网 (Stop Network)" else "启动组网 (Run Network)",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1502,13 +1803,18 @@ fun EasyTierScreen(
                     context = context,
                     runtimeState = runtimeState,
                     currentProfile = currentProfile,
+                    isConfigModified = isConfigModified,
                     onStartNetwork = {
                         launchStartEasyTier(switchToStatusTab = false)
+                    },
+                    onRestartNetwork = {
+                        launchRestartEasyTier(switchToStatusTab = false)
                     },
                     onStopNetwork = {
                         EasyTierRepository.stopNetwork()
                         Toast.makeText(context, "已停止 EasyTier 组网", Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    onNavigateToLogs = onNavigateToLogs
                 )
             }
         }
@@ -1795,10 +2101,57 @@ private fun EasyTierRunningTab(
     context: Context,
     runtimeState: top.xing2387.mihotier.core.config.EasyTierRuntimeState,
     currentProfile: EasyTierNetworkProfile,
+    isConfigModified: Boolean = false,
     onStartNetwork: () -> Unit,
-    onStopNetwork: () -> Unit
+    onRestartNetwork: () -> Unit = {},
+    onStopNetwork: () -> Unit,
+    onNavigateToLogs: () -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (runtimeState.isRunning && isConfigModified) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = AppTheme.colors.statusWarningBg,
+                border = BorderStroke(1.dp, AppTheme.colors.statusWarningText.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = AppTheme.colors.statusWarningText,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "配置已修改，需重启以应用",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.statusWarningText
+                        )
+                        Text(
+                            text = "当前运行中的节点仍在使用旧参数，点击立即重启应用新配置",
+                            fontSize = 11.sp,
+                            color = AppTheme.colors.textSecondary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Button(
+                        onClick = onRestartNetwork,
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.brandPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("立即重启", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
         // 1. Local Node Overview Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -1945,26 +2298,38 @@ private fun EasyTierRunningTab(
                     .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                val directCount = runtimeState.peers.count { !it.isRelay }
+                val relayCount = runtimeState.peers.count { it.isRelay }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "对端节点 (Peers)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppTheme.colors.textPrimary
-                    )
+                    Column {
+                        Text(
+                            text = "组网节点 (Peers)",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AppTheme.colors.textPrimary
+                        )
+                        if (runtimeState.isRunning && runtimeState.peers.isNotEmpty()) {
+                            Text(
+                                text = "全网拓扑: $directCount 直连 · $relayCount 中继",
+                                fontSize = 11.sp,
+                                color = AppTheme.colors.textMuted
+                            )
+                        }
+                    }
                     Surface(
-                        color = AppTheme.colors.statusInfoBg,
+                        color = if (directCount > 0) AppTheme.colors.statusSuccessBg else AppTheme.colors.statusInfoBg,
                         shape = RoundedCornerShape(999.dp)
                     ) {
                         Text(
-                            text = "${runtimeState.peers.size} 个连接",
+                            text = if (relayCount > 0) "$directCount 直连 · $relayCount 中继" else "$directCount 个直连",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AppTheme.colors.statusInfoText,
+                            color = if (directCount > 0) AppTheme.colors.statusSuccessText else AppTheme.colors.statusInfoText,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
@@ -1982,7 +2347,10 @@ private fun EasyTierRunningTab(
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = AppTheme.colors.surfaceVariant,
-                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
+                            border = BorderStroke(
+                                1.dp,
+                                if (peer.isRelay) AppTheme.colors.innerBorder else AppTheme.colors.statusSuccessBorder
+                            ),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
@@ -1994,37 +2362,44 @@ private fun EasyTierRunningTab(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = peer.hostname,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AppTheme.colors.textPrimary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.weight(1f)
-                                    )
+                                    ) {
+                                        Text(
+                                            text = peer.hostname,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AppTheme.colors.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Surface(
-                                            color = AppTheme.colors.statusInfoBg,
-                                            shape = RoundedCornerShape(6.dp)
+                                            color = if (peer.isRelay) AppTheme.colors.surfaceVariant else AppTheme.colors.statusSuccessBg,
+                                            shape = RoundedCornerShape(6.dp),
+                                            border = if (peer.isRelay) BorderStroke(1.dp, AppTheme.colors.innerBorder) else null
                                         ) {
                                             Text(
-                                                text = peer.tunnelProto,
+                                                text = if (peer.isRelay) peer.tunnelProto else "${peer.tunnelProto} 直连",
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = AppTheme.colors.statusInfoText,
+                                                color = if (peer.isRelay) AppTheme.colors.textSecondary else AppTheme.colors.statusSuccessText,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
                                         Surface(
-                                            color = AppTheme.colors.statusSuccessBg,
-                                            shape = RoundedCornerShape(6.dp)
+                                            color = AppTheme.colors.cardBackground,
+                                            shape = RoundedCornerShape(6.dp),
+                                            border = BorderStroke(1.dp, AppTheme.colors.innerBorder)
                                         ) {
                                             Text(
                                                 text = "${peer.latencyMs} ms",
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = AppTheme.colors.statusSuccessText,
+                                                color = AppTheme.colors.textPrimary,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -2033,75 +2408,55 @@ private fun EasyTierRunningTab(
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "虚拟IP: ${peer.virtualIpv4}",
+                                            fontSize = 12.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = AppTheme.colors.textSecondary
+                                        )
+                                        if (peer.isRelay) {
+                                            Surface(
+                                                color = AppTheme.colors.statusWarningBg,
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "中继路由",
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = AppTheme.colors.statusWarningText,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                        if (peer.isPublicServer) {
+                                            Surface(
+                                                color = AppTheme.colors.statusInfoBg,
+                                                shape = RoundedCornerShape(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "公共节点",
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = AppTheme.colors.statusInfoText,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                     Text(
-                                        text = "虚拟 IP: ${peer.virtualIpv4}",
-                                        fontSize = 12.sp,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = AppTheme.colors.textSecondary
-                                    )
-                                    Text(
-                                        text = "↓ ${peer.rxBytes}  ↑ ${peer.txBytes}",
+                                        text = "↓${peer.rxBytes} ↑${peer.txBytes}",
                                         fontSize = 12.sp,
                                         fontFamily = FontFamily.Monospace,
                                         color = AppTheme.colors.textMuted
                                     )
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Event Logs Card (运行事件日志)
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = AppTheme.colors.cardBackground),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = BorderStroke(1.dp, AppTheme.colors.cardBorder)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Text(
-                    text = "实例事件日志 (Events)",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppTheme.colors.textPrimary
-                )
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = AppTheme.colors.terminalBg,
-                    border = BorderStroke(1.dp, AppTheme.colors.innerBorder),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (runtimeState.eventLogs.isEmpty()) {
-                            Text(
-                                text = "暂无事件日志...",
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = AppTheme.colors.textMuted
-                            )
-                        } else {
-                            runtimeState.eventLogs.forEach { logLine ->
-                                Text(
-                                    text = logLine,
-                                    fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace,
-                                    color = AppTheme.colors.terminalText,
-                                    lineHeight = 16.sp
-                                )
                             }
                         }
                     }

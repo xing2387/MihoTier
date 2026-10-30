@@ -89,6 +89,11 @@ fun ClashProxyScreen(
 
     val context = LocalContext.current
 
+    // Refresh proxies when entering the screen
+    LaunchedEffect(Unit) {
+        viewModel.handleIntent(ClashProxyIntent.FetchProxies)
+    }
+
     // Show error toast if there's an error
     LaunchedEffect(state.error) {
         state.error?.let {

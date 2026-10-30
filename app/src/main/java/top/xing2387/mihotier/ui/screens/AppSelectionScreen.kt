@@ -1,11 +1,13 @@
 package top.xing2387.mihotier.ui.screens
 
 import android.app.Activity
+import android.graphics.Bitmap
 import android.net.VpnService
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -64,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -97,6 +101,15 @@ fun AppSelectionScreen(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    val appIconBitmap = remember(context) {
+        try {
+            val drawable = context.packageManager.getApplicationIcon(context.packageName)
+            drawable.toBitmap(width = 128, height = 128, config = Bitmap.Config.ARGB_8888).asImageBitmap()
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     LaunchedEffect(Unit) {
         ProfileRepository.init(context)
@@ -292,19 +305,29 @@ fun AppSelectionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(AppTheme.colors.brandPrimary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
+                    if (appIconBitmap != null) {
+                        Image(
+                            bitmap = appIconBitmap,
                             contentDescription = "MihoTier",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
                         )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(AppTheme.colors.brandPrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = "MihoTier",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -710,7 +733,14 @@ fun AppSelectionScreen(
                             QuickJumpPill(
                                 icon = Icons.Default.Speed,
                                 text = "节点",
-                                onClick = onNavigateToProxy
+                                enabled = isRunning,
+                                onClick = {
+                                    if (isRunning) {
+                                        onNavigateToProxy()
+                                    } else {
+                                        Toast.makeText(context, "请先启动 Mihomo", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             )
                             QuickJumpPill(
                                 icon = Icons.Default.Description,
@@ -1020,8 +1050,10 @@ private fun OverviewMetricCell(
 private fun QuickJumpPill(
     icon: ImageVector,
     text: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val contentColor = if (enabled) AppTheme.colors.textPrimary else AppTheme.colors.textMuted
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = AppTheme.colors.surfaceVariant,
@@ -1035,7 +1067,7 @@ private fun QuickJumpPill(
             Icon(
                 imageVector = icon,
                 contentDescription = text,
-                tint = AppTheme.colors.textPrimary,
+                tint = contentColor,
                 modifier = Modifier.size(13.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -1043,7 +1075,7 @@ private fun QuickJumpPill(
                 text = text,
                 fontSize = 11.5.sp,
                 fontWeight = FontWeight.Medium,
-                color = AppTheme.colors.textPrimary
+                color = contentColor
             )
         }
     }

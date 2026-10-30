@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
+import top.xing2387.mihotier.core.vpn.UnifiedVpnService
 import java.io.File
 
 data class Profile(
@@ -53,7 +54,7 @@ object ProfileRepository {
         }
     }
 
-    fun saveProfile(context: Context, profile: Profile) {
+    fun saveProfile(context: Context, profile: Profile, reloadIfActive: Boolean = true) {
         val currentList = _profiles.value.toMutableList()
         val index = currentList.indexOfFirst { it.id == profile.id }
         if (index != -1) {
@@ -73,6 +74,10 @@ object ProfileRepository {
         
         _profiles.value = currentList
         persist(context, currentList)
+
+        if (profile.isActive && reloadIfActive) {
+            UnifiedVpnService.reloadIfRunning(context)
+        }
     }
 
     fun deleteProfile(context: Context, id: String) {
@@ -83,11 +88,16 @@ object ProfileRepository {
     }
 
     fun setActiveProfile(context: Context, id: String) {
+        val currentActiveId = getActiveProfile()?.id
+        if (currentActiveId == id) return
+
         val currentList = _profiles.value.map {
             it.copy(isActive = it.id == id)
         }
         _profiles.value = currentList
         persist(context, currentList)
+
+        UnifiedVpnService.reloadIfRunning(context)
     }
 
     fun getActiveProfile(): Profile? {

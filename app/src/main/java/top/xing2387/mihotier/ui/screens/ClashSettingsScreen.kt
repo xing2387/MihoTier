@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,7 +55,7 @@ fun ClashSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Clash 设置 (Settings)",
+                        text = "Mihomo 设置 (Settings)",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = AppTheme.colors.textPrimary
@@ -124,18 +123,6 @@ fun ClashSettingsScreen(
                         title = "Meta 特性 (Meta Features)",
                         subtitle = "内核高级功能、进程过滤及实验特性",
                         onClick = onNavigateToMetaFeatures
-                    )
-
-                    HorizontalDivider(color = AppTheme.colors.divider, thickness = 1.dp)
-
-                    // 4. 应用设置 (App Settings)
-                    SettingsNavigationItem(
-                        icon = Icons.Default.Settings,
-                        iconBg = AppTheme.colors.statusInfoBg,
-                        iconTint = AppTheme.colors.statusInfoText,
-                        title = "应用设置 (App Settings)",
-                        subtitle = "通知栏网速、后台隐藏与系统通用设置",
-                        onClick = onNavigateToAppSettings
                     )
                 }
             }

@@ -185,7 +185,8 @@ data class EasyTierPeerNodeInfo(
     val lossRate: String,
     val rxBytes: String,
     val txBytes: String,
-    val isRelay: Boolean = false
+    val isRelay: Boolean = false,
+    val isPublicServer: Boolean = false
 )
 
 data class EasyTierRouteItem(
@@ -262,6 +263,24 @@ object EasyTierRepository {
 
     private val _runtimeState = MutableStateFlow(EasyTierRuntimeState())
     val runtimeState: StateFlow<EasyTierRuntimeState> = _runtimeState.asStateFlow()
+
+    private val _runningProfile = MutableStateFlow<EasyTierNetworkProfile?>(null)
+    val runningProfile: StateFlow<EasyTierNetworkProfile?> = _runningProfile.asStateFlow()
+
+    fun clearLastError() {
+        _runtimeState.value = _runtimeState.value.copy(lastError = "")
+    }
+
+    fun clearEventLogs() {
+        synchronized(historicalLogs) {
+            historicalLogs.clear()
+            seenRawEvents.clear()
+        }
+        _runtimeState.value = _runtimeState.value.copy(eventLogs = emptyList())
+    }
+
+    private val historicalLogs = mutableListOf<String>()
+    private val seenRawEvents = LinkedHashSet<String>()
 
     private var appContext: Context? = null
     private val repoScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -345,6 +364,7 @@ object EasyTierRepository {
         initialized = true
         refreshRuntimeStatus()
         if (_runtimeState.value.isRunning) {
+            _runningProfile.value = _profiles.value.find { it.id == _runtimeState.value.runningProfileId }
             startStatusPolling()
         }
     }
@@ -410,6 +430,73 @@ object EasyTierRepository {
         return true
     }
 
+    fun isValidIpv4(ip: String): Boolean {
+        val trimmed = ip.trim().substringBefore("/")
+        val parts = trimmed.split(".")
+        if (parts.size != 4) return false
+        val octets = parts.map { it.toIntOrNull() ?: return false }
+        if (octets.any { it !in 0..255 }) return false
+        if (octets[0] == 0 || octets[0] == 127) return false
+        return true
+    }
+
+    fun validateProfile(profile: EasyTierNetworkProfile): String {
+        if (profile.networkName.trim().isEmpty()) {
+            return "网络名称不能为空"
+        }
+
+        if (!profile.dhcp) {
+            val ip = profile.virtualIpv4.trim()
+            if (ip.isEmpty() || ip == "0.0.0.0") {
+                return "关闭 DHCP 时必须指定虚拟 IPv4 地址 (例如 10.144.144.1)"
+            }
+            if (!isValidIpv4(ip)) {
+                return "虚拟 IPv4 地址格式不正确: $ip"
+            }
+            if (profile.networkLength !in 8..30) {
+                return "子网掩码前缀长度必须在 8 到 30 之间"
+            }
+        }
+
+        when (profile.networkingMethod) {
+            NetworkingMethod.PUBLIC_SERVER -> {
+                val s = profile.publicServerUrl.trim()
+                if (s.isEmpty()) {
+                    return "公共服务器地址不能为空"
+                }
+                if (!s.contains("://")) {
+                    return "公共服务器地址缺少协议前缀 (例如 tcp:// 或 udp://)"
+                }
+            }
+            NetworkingMethod.MANUAL -> {
+                val validPeers = profile.peerUrls.map { it.trim() }.filter { it.isNotEmpty() }
+                if (validPeers.isEmpty()) {
+                    return "手动指定组网方式需要至少添加一个对端节点地址 (例如 tcp://x.x.x.x:11010)"
+                }
+                for (peer in validPeers) {
+                    if (!peer.contains("://")) {
+                        return "对端地址缺少协议前缀: $peer (例如 tcp://$peer)"
+                    }
+                }
+            }
+            NetworkingMethod.STANDALONE -> {
+                // Standalone doesn't require peers
+            }
+        }
+
+        if (profile.socks5Enabled && profile.socks5Port !in 1024..65535) {
+            return "SOCKS5 代理端口必须在 1024 到 65535 之间"
+        }
+
+        val toml = profile.toTomlString()
+        val tomlErr = validateToml(toml)
+        if (tomlErr.isNotBlank()) {
+            return "TOML 配置校验失败: $tomlErr"
+        }
+
+        return ""
+    }
+
     fun validateToml(tomlStr: String): String {
         return try {
             EasyTierNative.nativeValidateConfig(tomlStr)
@@ -421,14 +508,26 @@ object EasyTierRepository {
     fun startNetwork(context: Context, profile: EasyTierNetworkProfile): Result<Unit> {
         appContext = context.applicationContext
         updateProfile(context, profile)
-        val toml = profile.toTomlString()
-        val validationError = validateToml(toml)
+
+        val validationError = validateProfile(profile)
         if (validationError.isNotBlank()) {
             Log.e("EasyTierRepo", "Validation error: $validationError")
             _runtimeState.value = _runtimeState.value.copy(lastError = validationError)
             return Result.failure(IllegalArgumentException(validationError))
         }
 
+        // Clean up any previously running instance first to ensure clean state and socket unbinding
+        if (_runtimeState.value.isRunning) {
+            stopNetwork()
+            try {
+                Thread.sleep(150)
+            } catch (_: InterruptedException) {
+            }
+        }
+
+        UnifiedVpnService.resetEasyTierTunSignature()
+
+        val toml = profile.toTomlString()
         val code = try {
             EasyTierNative.nativeStartEasyTier(toml)
         } catch (e: Throwable) {
@@ -438,7 +537,9 @@ object EasyTierRepository {
 
         if (code != 0) {
             val err = try {
-                EasyTierNative.nativeGetLastError()
+                EasyTierNative.nativeGetLastError().ifBlank {
+                    "启动 EasyTier 失败 (code=$code)"
+                }
             } catch (_: Throwable) {
                 "未知错误 (code=$code)"
             }
@@ -447,9 +548,18 @@ object EasyTierRepository {
             return Result.failure(IllegalStateException(err))
         }
 
+        _runningProfile.value = profile.copy()
         lastTrafficSampleTimeMs = 0L
         lastRxTotalBytes = 0L
         lastTxTotalBytes = 0L
+        val timeStr = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        val startLog = "[$timeStr] [INFO] EasyTier 组网实例启动: ${profile.instanceName}"
+        val initialLogs = synchronized(historicalLogs) {
+            historicalLogs.clear()
+            seenRawEvents.clear()
+            historicalLogs.add(startLog)
+            historicalLogs.toList()
+        }
         _runtimeState.value = _runtimeState.value.copy(
             isRunning = true,
             runningProfileId = profile.id,
@@ -457,7 +567,9 @@ object EasyTierRepository {
             rxSpeed = 0L,
             txSpeed = 0L,
             rxTotalBytes = 0L,
-            txTotalBytes = 0L
+            txTotalBytes = 0L,
+            eventLogs = initialLogs,
+            lastError = ""
         )
         refreshRuntimeStatus(profile)
         startStatusPolling()
@@ -478,13 +590,19 @@ object EasyTierRepository {
             lastTrafficSampleTimeMs = 0L
             lastRxTotalBytes = 0L
             lastTxTotalBytes = 0L
+            _runningProfile.value = null
+            UnifiedVpnService.resetEasyTierTunSignature()
             EasyTierNative.nativeStopEasyTier()
             val timeStr = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            val prevLogs = _runtimeState.value.eventLogs
+            val remainingLogs = synchronized(historicalLogs) {
+                historicalLogs.add("[$timeStr] [INFO] 已停止 EasyTier 组网实例")
+                while (historicalLogs.size > 1000) historicalLogs.removeAt(0)
+                historicalLogs.toList()
+            }
             _runtimeState.value = EasyTierRuntimeState(
                 isRunning = false,
                 runningProfileId = null,
-                eventLogs = (prevLogs + "[$timeStr] [INFO] 已停止 EasyTier 组网实例").takeLast(50)
+                eventLogs = remainingLogs
             )
             appContext?.let { ctx ->
                 try {
@@ -499,6 +617,20 @@ object EasyTierRepository {
         } catch (e: Throwable) {
             Result.failure(e)
         }
+    }
+
+    fun restartNetwork(context: Context, profile: EasyTierNetworkProfile): Result<Unit> {
+        val validationErr = validateProfile(profile)
+        if (validationErr.isNotBlank()) {
+            _runtimeState.value = _runtimeState.value.copy(lastError = validationErr)
+            return Result.failure(IllegalArgumentException(validationErr))
+        }
+        stopNetwork()
+        try {
+            Thread.sleep(150)
+        } catch (_: InterruptedException) {
+        }
+        return startNetwork(context, profile)
     }
 
     fun refreshRuntimeStatus(activeProfile: EasyTierNetworkProfile? = null) {
@@ -589,7 +721,8 @@ object EasyTierRepository {
                         lossRate = pObj.optString("loss_rate", "0.0%"),
                         rxBytes = pObj.optString("rx_bytes", "0 B"),
                         txBytes = pObj.optString("tx_bytes", "0 B"),
-                        isRelay = pObj.optBoolean("is_relay", false)
+                        isRelay = pObj.optBoolean("is_relay", false),
+                        isPublicServer = pObj.optBoolean("is_public_server", false)
                     )
                 )
             }
@@ -623,7 +756,9 @@ object EasyTierRepository {
                 val editor = prefs.edit()
                 var changed = false
                 if (normalizeToNetworkCidr(rawIpv4) != null) {
-                    if (prefs.getString(KEY_LAST_ALLOCATED_IPV4, null) != rawIpv4) {
+                    val profileKey = if (profile != null) "${KEY_LAST_ALLOCATED_IPV4}_${profile.id}" else KEY_LAST_ALLOCATED_IPV4
+                    if (prefs.getString(profileKey, null) != rawIpv4) {
+                        editor.putString(profileKey, rawIpv4)
                         editor.putString(KEY_LAST_ALLOCATED_IPV4, rawIpv4)
                         changed = true
                     }
@@ -640,20 +775,45 @@ object EasyTierRepository {
             }
 
             val eventsArray = json.optJSONArray("events") ?: JSONArray()
-            val logs = mutableListOf<String>()
-            for (i in 0 until eventsArray.length()) {
-                val rawEvent = eventsArray.optString(i)
-                if (rawEvent.isNotBlank()) {
-                    logs.add(formatEasyTierEvent(rawEvent))
+            val rawEventsInChronologicalOrder = mutableListOf<String>()
+            // Rust event_journal uses push_front, so index 0 is newest.
+            // Reverse iteration ensures chronological order (oldest to newest).
+            for (i in eventsArray.length() - 1 downTo 0) {
+                val raw = eventsArray.optString(i)
+                if (raw.isNotBlank()) {
+                    rawEventsInChronologicalOrder.add(raw)
                 }
             }
-            if (errorMsg.isNotBlank()) {
-                logs.add("[ERROR] $errorMsg")
+
+            val finalLogs = synchronized(historicalLogs) {
+                for (raw in rawEventsInChronologicalOrder) {
+                    if (seenRawEvents.add(raw)) {
+                        historicalLogs.add(formatEasyTierEvent(raw))
+                    }
+                }
+                if (errorMsg.isNotBlank()) {
+                    val lastLog = historicalLogs.lastOrNull()
+                    if (lastLog == null || !lastLog.endsWith("[ERROR] $errorMsg")) {
+                        val timeStr = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+                        historicalLogs.add("[$timeStr] [ERROR] $errorMsg")
+                    }
+                }
+                while (historicalLogs.size > 1000) {
+                    historicalLogs.removeAt(0)
+                }
+                while (seenRawEvents.size > 500) {
+                    val it = seenRawEvents.iterator()
+                    if (it.hasNext()) {
+                        it.next()
+                        it.remove()
+                    }
+                }
+                historicalLogs.toList()
             }
 
             Log.d(
                 "EasyTierRepo",
-                "Status: ipv4=$ipv4, peers=${peerNodes.size}, routes=${routeItems.size}, events=${logs.size}, err=$errorMsg"
+                "Status: ipv4=$ipv4, peers=${peerNodes.size}, routes=${routeItems.size}, events=${finalLogs.size}, err=$errorMsg"
             )
 
             _runtimeState.value = EasyTierRuntimeState(
@@ -672,7 +832,7 @@ object EasyTierRepository {
                 txTotalBytes = totalTxBytes,
                 peers = peerNodes,
                 routes = routeItems,
-                eventLogs = logs.takeLast(40),
+                eventLogs = finalLogs,
                 lastError = errorMsg
             )
         } catch (e: Throwable) {
@@ -723,7 +883,8 @@ object EasyTierRepository {
                 cidrs.add(it)
             }
         } else {
-            val savedDhcpIp = prefs.getString(KEY_LAST_ALLOCATED_IPV4, null)
+            val profileKey = if (profile != null) "${KEY_LAST_ALLOCATED_IPV4}_${profile.id}" else KEY_LAST_ALLOCATED_IPV4
+            val savedDhcpIp = prefs.getString(profileKey, null) ?: prefs.getString(KEY_LAST_ALLOCATED_IPV4, null)
             if (!savedDhcpIp.isNullOrBlank()) {
                 normalizeToNetworkCidr(savedDhcpIp)?.let { cidrs.add(it) }
             }
@@ -866,10 +1027,29 @@ object EasyTierRepository {
             val eventObj = obj.optJSONObject("event")
             if (eventObj != null) {
                 val eventType = eventObj.keys().asSequence().firstOrNull() ?: "Event"
-                val detail = eventObj.opt(eventType)?.toString() ?: ""
-                "[$timeShort] $eventType: $detail"
+                val eventVal = eventObj.opt(eventType)
+                val detailStr = when (eventVal) {
+                    is JSONObject -> "\n" + eventVal.toString(2)
+                    is JSONArray -> "\n" + eventVal.toString(2)
+                    else -> {
+                        val str = eventVal?.toString().orEmpty()
+                        val trimmed = str.trim()
+                        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                            try { "\n" + JSONObject(trimmed).toString(2) } catch (_: Exception) { " $str" }
+                        } else if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                            try { "\n" + JSONArray(trimmed).toString(2) } catch (_: Exception) { " $str" }
+                        } else {
+                            " $str"
+                        }
+                    }
+                }
+                "[$timeShort] $eventType:$detailStr"
             } else {
-                rawJson
+                try {
+                    obj.toString(2)
+                } catch (_: Exception) {
+                    rawJson
+                }
             }
         } catch (_: Exception) {
             rawJson

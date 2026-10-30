@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -260,8 +259,8 @@ fun ClashMainScreen(
         trafficPoints.add(currentSpeedBytes)
     }
 
-    // Periodically query Mihomo core status (Mode & Selected Proxy) when running
-    LaunchedEffect(isRunning) {
+    // Periodically query Mihomo core status (Mode & Selected Proxy) when running or when active profile changes
+    LaunchedEffect(isRunning, activeProfile?.id) {
         if (isRunning) {
             val httpClient = OkHttpClient.Builder()
                 .connectTimeout(2, TimeUnit.SECONDS)

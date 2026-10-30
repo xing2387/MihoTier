@@ -1,12 +1,9 @@
 package top.xing2387.mihotier.ui.screens
 
-import android.content.ClipData
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -16,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -32,10 +28,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,15 +43,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,18 +61,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import top.xing2387.mihotier.core.config.ConfigManager
 import top.xing2387.mihotier.core.config.Profile
@@ -91,7 +82,9 @@ import java.util.UUID
 @Composable
 fun ClashProfileDetailScreen(
     profileId: String?,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToScanner: () -> Unit = {},
+    navController: NavController? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -109,6 +102,59 @@ fun ClashProfileDetailScreen(
 
     var autoUpdateExpanded by remember { mutableStateOf(false) }
     var showConfigEditorScreen by remember { mutableStateOf(false) }
+
+    // Listen to QR Code scan result from ClashQrScannerScreen
+    val scannedContentFlow = navController?.currentBackStackEntry
+        ?.savedStateHandle
+        ?.getStateFlow<String?>("scanned_qr_content", null)
+    val scannedContent by scannedContentFlow?.collectAsState() ?: remember { mutableStateOf(null) }
+
+    LaunchedEffect(scannedContent) {
+        val raw = scannedContent
+        if (!raw.isNullOrBlank()) {
+            navController?.currentBackStackEntry?.savedStateHandle?.remove<String>("scanned_qr_content")
+
+            var parsedUrl = raw.trim()
+            var parsedName: String? = null
+
+            // Support clash://install-config?url=...&name=... and clashmeta://install-config?url=...
+            if (parsedUrl.startsWith("clash://install-config", ignoreCase = true) ||
+                parsedUrl.startsWith("clashmeta://install-config", ignoreCase = true)) {
+                try {
+                    val uri = Uri.parse(parsedUrl)
+                    uri.getQueryParameter("url")?.let { parsedUrl = it }
+                    uri.getQueryParameter("name")?.let { parsedName = it }
+                } catch (_: Exception) {}
+            }
+
+            // Extract name from URL anchor #Name if present
+            if (parsedName == null && parsedUrl.contains("#")) {
+                val anchor = parsedUrl.substringAfterLast("#")
+                if (anchor.isNotBlank()) {
+                    parsedName = Uri.decode(anchor)
+                }
+            }
+
+            if (parsedUrl.startsWith("http://", ignoreCase = true) || parsedUrl.startsWith("https://", ignoreCase = true)) {
+                isSubscription = true
+                url = parsedUrl
+                if (!parsedName.isNullOrBlank() && name.isBlank()) {
+                    name = parsedName!!
+                } else if (name.isBlank()) {
+                    try {
+                        name = Uri.parse(parsedUrl).host ?: "Subscription"
+                    } catch (_: Exception) {
+                        name = "Subscription"
+                    }
+                }
+                Toast.makeText(context, "已扫码填充订阅链接", Toast.LENGTH_SHORT).show()
+            } else {
+                isSubscription = true
+                url = parsedUrl
+                Toast.makeText(context, "已扫码填充内容", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val autoUpdateOptions = listOf(
         "24 小时",
@@ -245,6 +291,17 @@ fun ClashProfileDetailScreen(
                             contentDescription = "Back",
                             tint = AppTheme.colors.textPrimary
                         )
+                    }
+                },
+                actions = {
+                    if (!isExistingProfile) {
+                        IconButton(onClick = onNavigateToScanner) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = "扫码导入",
+                                tint = AppTheme.colors.textPrimary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
